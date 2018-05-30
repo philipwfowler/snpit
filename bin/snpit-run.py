@@ -28,6 +28,6 @@ if __name__ == "__main__":
 
     (lineage,percentage)=a.determine_lineage()
 
-    print(a.df)
+#    print(a.df)
 
     print("%50s %12s %6.1f%%" % (options.input, lineage,percentage))

@@ -3,7 +3,7 @@
 import pkg_resources
 import operator
 
-import pandas
+#import pandas
 
 #PyVCF
 import vcf
@@ -103,13 +103,13 @@ class snpit(object):
 
             self.percentage[lineage_name]=((shared / ref) * 100)
 
-        self.df=pandas.DataFrame(list(self.percentage.items()),columns=['lineage','percentage'])
+#        self.df=pandas.DataFrame(list(self.percentage.items()),columns=['lineage','percentage'])
 
-        self.df.reset_index(inplace=True)
+#        self.df.reset_index(inplace=True)
 
-        self.df.set_index('lineage',inplace=True)
+#        self.df.set_index('lineage',inplace=True)
 
-        self.df=self.df['percentage']
+#        self.df=self.df['percentage']
 
         results = sorted(self.percentage.items(), key=operator.itemgetter(1),reverse=True)
 
