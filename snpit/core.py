@@ -3,8 +3,6 @@
 import pkg_resources
 import operator
 
-import pandas
-
 #PyVCF
 import vcf
 
@@ -13,7 +11,7 @@ from Bio import SeqIO
 
 class snpit(object):
 
-    def __init__(self,vcf_file,threshold=10):
+    def __init__(self,threshold=10):
 
         self.threshold=threshold
 
@@ -45,7 +43,11 @@ class snpit(object):
 
                 self.reference_snps[lineage_name][int(cols[0])]=cols[1]
 
-        self.create_samples()
+
+
+    def load_vcf(vcf_file):
+
+        self._reset_lineage_snps()
 
         vcf_reader = vcf.Reader(open(vcf_file, 'r'))
 
@@ -59,7 +61,7 @@ class snpit(object):
                     self._permute(record.POS,str(record.ALT[int(geno)-1]))
 
 
-    def create_samples(self):
+    def _reset_lineage_snps(self):
 
         genbank_path = '/'.join(('..','lib', "H37Rv.gbk"))
 
@@ -81,7 +83,6 @@ class snpit(object):
 
     def _permute(self,pos,new_base):
 
-        # assert new_base in ['A','C','T','G','-'], "incorrect base specified: "+new_base
 
         for lineage_name in self.lineages:
 
@@ -102,14 +103,6 @@ class snpit(object):
             ref = float(len(self.reference_snps[lineage_name]))
 
             self.percentage[lineage_name]=((shared / ref) * 100)
-
-        self.df=pandas.DataFrame(list(self.percentage.items()),columns=['lineage','percentage'])
-
-        self.df.reset_index(inplace=True)
-
-        self.df.set_index('lineage',inplace=True)
-
-        self.df=self.df['percentage']
 
         results = sorted(self.percentage.items(), key=operator.itemgetter(1),reverse=True)
 
