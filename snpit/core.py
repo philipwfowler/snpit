@@ -64,7 +64,7 @@ class snpit(object):
                 self.reference_snps[lineage_name][int(cols[0])]=cols[1]
 
 
-    def load_vcf(vcf_file):
+    def load_vcf(self,vcf_file):
         """
         Loads the vcf file and then, for each lineage, identify the base at each of the identifying positions in the genome.
 
