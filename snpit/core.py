@@ -9,11 +9,12 @@ import vcf
 from Bio import SeqIO
 
 class snpit(object):
-"""
-The snpit class is designed to take a VCF file and return the most likely lineage based on Sam Lipworth's SNP-IT.
 
-The methods have been separated so it can be incorporated into single Python scripts that processes multiple VCF files.
-"""
+    """
+    The snpit class is designed to take a VCF file and return the most likely lineage based on Sam Lipworth's SNP-IT.
+
+    The methods have been separated so it can be incorporated into single Python scripts that processes multiple VCF files.
+    """
 
     def __init__(self,threshold=10):
 
