@@ -30,4 +30,7 @@ if __name__ == "__main__":
 
 #    print(a.df)
 
-    print("%50s %12s %6.1f%%" % (options.input, lineage,percentage))
+    if lineage is not None and percentage is not None:
+        print("%50s %12s %6.1f%%" % (options.input, lineage,percentage))
+    else:
+        print("%50s %12s %6.1f%%" % ("none", 100))

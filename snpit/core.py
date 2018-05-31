@@ -93,14 +93,13 @@ class snpit(object):
 
                         # if there is a null call, record a hyphen which won't match, regardless of the reference
                         if geno == '.':
-                            self.sample_snps[lineage_name][int(pos)]="-"
-                            self._permute(record.POS,'-')
 
-                        # otherwise replace the H37Rv base with the actual in the VCF file
+                            self.sample_snps[lineage_name][int(record.POS)]="-"
+                            
+                        # otherwise replace the H37Rv base with the actual base from the VCF file
                         elif geno != 0:
 
-                            # CAUTION the GenBank File is 1-based, but the lineage files are 0-based
-                            self.sample_snps[lineage_name][int(pos)]=record.ALT[int(geno)-1]
+                            self.sample_snps[lineage_name][int(record.POS)]=record.ALT[int(geno)-1]
 
     def _reset_lineage_snps(self):
         """
@@ -147,7 +146,7 @@ class snpit(object):
 
         self.percentage={}
 
-        # consider lineage-by-lineage
+        # consider lineage-by-lineage
         for lineage_name in self.lineages:
 
             # using sets, calculate which SNPs at the defining positions are the same as the reference for this lineage
