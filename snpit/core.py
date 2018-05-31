@@ -3,7 +3,6 @@
 import pkg_resources
 import operator
 
-#PyVCF
 import vcf
 
 #BioPython
