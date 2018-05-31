@@ -44,7 +44,7 @@ class snpit(object):
 
 
 
-    def load_vcf(vcf_file):
+    def load_vcf(self,vcf_file):
 
         self._reset_lineage_snps()
 
