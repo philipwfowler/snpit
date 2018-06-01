@@ -95,10 +95,9 @@ class snpit(object):
                         if geno == '.':
 
                             self.sample_snps[lineage_name][int(record.POS)]="-"
-                            
+
                         # otherwise replace the H37Rv base with the actual base from the VCF file
                         elif geno != 0:
-
                             self.sample_snps[lineage_name][int(record.POS)]=record.ALT[int(geno)-1]
 
     def _reset_lineage_snps(self):
@@ -149,8 +148,15 @@ class snpit(object):
         # consider lineage-by-lineage
         for lineage_name in self.lineages:
 
-            # using sets, calculate which SNPs at the defining positions are the same as the reference for this lineage
-            overlap = set(self.reference_snps[lineage_name].items()) & set(self.sample_snps[lineage_name].items())
+            reference_set=[]
+            for i,j in enumerate(self.reference_snps[lineage_name]):
+                reference_set.append((i,j))
+
+            sample_set=[]
+            for i,j in enumerate(self.sample_snps[lineage_name]):
+                sample_set.append((i,j))
+
+            overlap =  set(reference_set) & set(sample_set)
 
             # calculate how many there are
             shared = float(len(overlap))
@@ -162,24 +168,24 @@ class snpit(object):
             self.percentage[lineage_name]=((shared / ref) * 100)
 
         # create an ordered list of tuples of (lineage,percentage) in descending order
-        results = sorted(self.percentage.items(), key=operator.itemgetter(1),reverse=True)
+        self.results = sorted(self.percentage.items(), key=operator.itemgetter(1),reverse=True)
 
         # if the first two entries are above the threshold
-        if results[0][1]>self.threshold and results[1][1]>self.threshold:
+        if self.results[0][1]>self.threshold and self.results[1][1]>self.threshold:
 
             # and the first is lineage4, take the second one as it will be a sub-lineage
-            if results[0][0]=="lineage4":
-                return(results[1])
+            if self.results[0][0]=="lineage4":
+                return(self.results[1])
 
             # otherwise just return the highest
             else:
-                return(results[0])
+                return(self.results[0])
 
         # otherwise if the first element is above the threshold
-        elif results[0][1]>self.threshold:
+        elif self.results[0][1]>self.threshold:
 
             # return the tuple
-            return(results[0])
+            return(self.results[0])
 
         # finally, no strain must be above the threshold percentage
         else:
