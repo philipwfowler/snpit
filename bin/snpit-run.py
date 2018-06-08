@@ -33,9 +33,10 @@ if __name__ == "__main__":
     # determine the most likely lineage/sub-lineage using snpit
     (lineage,percentage)=tb_lineage_collection.determine_lineage()
 
-
     # print("Most likely lineage is ...")
     if percentage is not None:
         print("%16s %.1f %%" % (lineage,percentage))
     else:
         print("%16s %.1f %%" % ("None identified",0))
+
+    print(tb_lineage_collection.results)
