@@ -3,6 +3,7 @@
 import pkg_resources
 import operator
 
+# PyVCF
 import vcf
 
 #BioPython
@@ -177,7 +178,7 @@ class snpit(object):
             if self.results[0][0]=="lineage4":
                 return(self.results[1])
 
-            # otherwise just return the highest
+            # otherwise just return the first
             else:
                 return(self.results[0])
 
@@ -187,6 +188,6 @@ class snpit(object):
             # return the tuple
             return(self.results[0])
 
-        # finally, no strain must be above the threshold percentage
+        # finally, no strain must be above the threshold percentage so return Nones as "Don't know"
         else:
             return((None,None))
