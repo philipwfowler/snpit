@@ -35,8 +35,6 @@ if __name__ == "__main__":
 
     # print("Most likely lineage is ...")
     if percentage is not None:
-        print("%16s %.1f %%" % (lineage,percentage))
+        print("%40s %16s %.1f %%" % (options.input,lineage,percentage))
     else:
-        print("%16s %.1f %%" % ("None identified",0))
-
-    print(tb_lineage_collection.results)
+        print("%40s %16s %.1f %%" % (options.input,"none identified",0))

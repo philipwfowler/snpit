@@ -99,7 +99,6 @@ class snpit(object):
 
                         # otherwise replace the H37Rv base with the actual base from the VCF file
                         elif geno != 0:
-                            print(lineage_name,record.POS,self.sample_snps[lineage_name][int(record.POS)],record.ALT[int(geno)-1])
                             self.sample_snps[lineage_name][int(record.POS)]=record.ALT[int(geno)-1]
 
     def _reset_lineage_snps(self):
@@ -155,39 +154,11 @@ class snpit(object):
             shared=0
             ref=0
 
-
             for i,j in enumerate(self.reference_snps[lineage_name]):
 
-                print(j)
-
-                if self.reference_snps[lineage_name][j] == self.sample_snps[lineage_name[j]]:
+                if self.reference_snps[lineage_name][j] == self.sample_snps[lineage_name][j]:
                     shared+=1
                 ref+=1
-
-            #     reference_set.append((base,1))
-            #
-            # sample_set=[]
-            # for i,j in enumerate(self.sample_snps[lineage_name]):
-            #     base=self.sample_snps[lineage_name][j]
-            #     sample_set.append((base,1))
-            #
-            # print(reference_set)
-            # print(sample_set)
-            # print(len(reference_set))
-            # print(len(sample_set))
-            #
-            #
-            # overlap =  set(reference_set) & set(sample_set)
-            #
-            # # calculate how many there are
-            # shared = float(len(overlap))
-            #
-            # # calculate how many SNPs define this lineage
-            # ref = float(len(self.reference_snps[lineage_name]))
-
-            # print(sample_set)
-
-            print(lineage_name,shared,ref)
 
             # thereby calculate the percentage of SNPs in this sample that match the lineage
             self.percentage[lineage_name]=((shared / ref) * 100)
