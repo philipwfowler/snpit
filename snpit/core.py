@@ -176,29 +176,10 @@ class snpit(object):
         identified_lineage_name=self.results[0][0]
         identified_lineage_percentage=self.results[0][1]
 
-
-
+        # if the top lineage is above the specified threshold, return the classification
         if identified_lineage_percentage>self.threshold:
             return(self.lineages[identified_lineage_name]['species'],self.lineages[identified_lineage_name]['lineage'],self.lineages[identified_lineage_name]['sublineage'],identified_lineage_percentage)
 
-
-        # # if the first two entries are above the threshold
-        # if self.results[0][1]>self.threshold and self.results[1][1]>self.threshold:
-        #
-        #     # and the first is lineage4, take the second one as it will be a sub-lineage
-        #     if self.results[0][0]=="lineage4":
-        #         return(self.results[1])
-        #
-        #     # otherwise just return the first
-        #     else:
-        #         return(self.results[0])
-        #
-        # # otherwise if the first element is above the threshold
-        # elif self.results[0][1]>self.threshold:
-        #
-        #     # return the tuple
-        #     return(self.results[0])
-        #
-        # # finally, no strain must be above the threshold percentage so return Nones as "Don't know"
-        # else:
-        #     return((None,None))
+        # finally, no strain must be above the threshold percentage so return Nones as "Don't know"
+        else:
+            return(None,None,None,None)
