@@ -1,0 +1,27 @@
+id,species,lineage,sublineage
+dehli,M. tuberculosis,Lineage 1,
+beijing,M. tuberculosis,Lineage 2,
+eai,M. tuberculosis,Lineage 3,
+lineage4,M. tuberculosis,Lineage 4,
+haarlem,M. tuberculosis,Lineage 4,Haarlem
+lam,M. tuberculosis,Lineage 4,LAM
+cameroon,M. tuberculosis,Lineage 4,Cameroon
+ghana,M. tuberculosis,Lineage 4,Ghana
+stype,M. tuberculosis,Lineage 4,S-type
+tur,M. tuberculosis,Lineage 4,Tur
+uganda,M. tuberculosis,Lineage 4,Uganda
+ural,M. tuberculosis,Lineage 4,Ural
+xtype,M. tuberculosis,Lineage 4,X-type
+westafrican1,M. tuberculosis,Lineage 5,
+westafrican2,M. tuberculosis,Lineage 6,
+ethiopian,M. tuberculosis,Lineage 7,
+bcg,M. bovis BCG,,
+bovis,M. bovis bovis,,
+orygis,M. orygis,,
+microti,M. microti,,
+canetti,M. canetti,,
+pinipedii,M. pinipedii,,
+caprae,M. bovis caprae,,
+dassie,Dassie bacillus (ex Procavia capensis),,
+suricattae,M. suricattae,,
+mungi,M. mungi,,

@@ -31,10 +31,10 @@ if __name__ == "__main__":
     tb_lineage_collection.load_vcf(options.input.rstrip())
 
     # determine the most likely lineage/sub-lineage using snpit
-    (lineage,percentage)=tb_lineage_collection.determine_lineage()
+    (species,lineage,sublineage,percentage)=tb_lineage_collection.determine_lineage()
 
     # print("Most likely lineage is ...")
     if percentage is not None:
-        print("%40s %16s %.1f %%" % (options.input,lineage,percentage))
+        print("%s\n%20s %16s %16s %.1f %%" % (options.input,species,lineage,sublineage,percentage))
     else:
-        print("%40s %16s %.1f %%" % (options.input,"none identified",0))
+        print("%s\n%20s %16s %16s %.1f %%" % (options.input,"Unknown","Unknown",None,0))

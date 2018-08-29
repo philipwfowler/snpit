@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import pkg_resources
+import pkg_resources, csv, codecs
 import operator
 
 # PyVCF
@@ -28,23 +28,30 @@ class snpit(object):
         self.threshold=threshold
 
         # construct the relative path in the package to the library file which contains a list of all the lineages and sub-lineages
-        resource_path = '/'.join(('..','lib', 'library'))
+        resource_path = '/'.join(('..','lib', 'library.csv'))
 
         # open a stream object ready for reading
         library_file = pkg_resources.resource_stream("snpit", resource_path)
 
+        utf8_reader = codecs.getreader("utf-8")
+
+
         self.reference_snps={}
 
-        self.lineages=[]
+        self.lineages={}
+
+        # with open(library_file) as CSVFILE:
+
+        reader = csv.DictReader(utf8_reader(library_file))
 
         # read the library file line-by-line
-        for record in library_file:
+        for record in reader:
 
             # remove the carriage return and decode from binary
-            lineage_name = record.rstrip().decode('UTF-8')
+            lineage_name = record['id']
 
-            # remember the lineage name in a list
-            self.lineages.append(lineage_name)
+            # remember the lineage meta data in a dictionary
+            self.lineages[lineage_name]={'species':record['species'],'lineage':record['lineage'],'sublineage':record['sublineage']}
 
             # now we know the name construct the relative path to this lineage file
             lineage_path='/'.join(('..','lib',lineage_name))
@@ -166,23 +173,32 @@ class snpit(object):
         # create an ordered list of tuples of (lineage,percentage) in descending order
         self.results = sorted(self.percentage.items(), key=operator.itemgetter(1),reverse=True)
 
-        # if the first two entries are above the threshold
-        if self.results[0][1]>self.threshold and self.results[1][1]>self.threshold:
+        identified_lineage_name=self.results[0][0]
+        identified_lineage_percentage=self.results[0][1]
 
-            # and the first is lineage4, take the second one as it will be a sub-lineage
-            if self.results[0][0]=="lineage4":
-                return(self.results[1])
 
-            # otherwise just return the first
-            else:
-                return(self.results[0])
 
-        # otherwise if the first element is above the threshold
-        elif self.results[0][1]>self.threshold:
+        if identified_lineage_percentage>self.threshold:
+            return(self.lineages[identified_lineage_name]['species'],self.lineages[identified_lineage_name]['lineage'],self.lineages[identified_lineage_name]['sublineage'],identified_lineage_percentage)
 
-            # return the tuple
-            return(self.results[0])
 
-        # finally, no strain must be above the threshold percentage so return Nones as "Don't know"
-        else:
-            return((None,None))
+        # # if the first two entries are above the threshold
+        # if self.results[0][1]>self.threshold and self.results[1][1]>self.threshold:
+        #
+        #     # and the first is lineage4, take the second one as it will be a sub-lineage
+        #     if self.results[0][0]=="lineage4":
+        #         return(self.results[1])
+        #
+        #     # otherwise just return the first
+        #     else:
+        #         return(self.results[0])
+        #
+        # # otherwise if the first element is above the threshold
+        # elif self.results[0][1]>self.threshold:
+        #
+        #     # return the tuple
+        #     return(self.results[0])
+        #
+        # # finally, no strain must be above the threshold percentage so return Nones as "Don't know"
+        # else:
+        #     return((None,None))
