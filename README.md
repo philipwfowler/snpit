@@ -8,14 +8,15 @@ SNP-IT allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H
 
 First clone the repository on your local machine
 
-   > git clone https://github.com/philipwfowler/snpit.git
+```   
+> git clone https://github.com/philipwfowler/snpit.git
    Cloning into 'snpit'...
    remote: Counting objects: 140, done.
    remote: Compressing objects: 100% (10/10), done.
    remote: Total 140 (delta 7), reused 13 (delta 6), pack-reused 122
    Receiving objects: 100% (140/140), 2.95 MiB | 3.58 MiB/s, done.
    Resolving deltas: 100% (58/58), done.
-   
+```   
 
 Usage python SNP-IT.py input_file output_file
 
