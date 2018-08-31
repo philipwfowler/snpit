@@ -17,7 +17,7 @@ class snpit(object):
     The methods have been separated so it can be incorporated into single Python scripts that processes multiple VCF files.
     """
 
-    def __init__(self,threshold=10):
+    def __init__(self,vcf_file=None,threshold=10):
 
         """
         Args:
@@ -71,6 +71,9 @@ class snpit(object):
                 # remember the base in the dictionary using the genome position as the key
                 self.reference_snps[lineage_name][int(cols[0])]=cols[1]
 
+        self.load_vcf(vcf_file)
+
+        (self.species,self.lineage,self.sublineage,self.percentage)=self.determine_lineage()
 
     def load_vcf(self,vcf_file):
         """

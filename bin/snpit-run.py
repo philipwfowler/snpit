@@ -23,18 +23,10 @@ if __name__ == "__main__":
     except IOError:
         print("input file "+options.input+" does not exist!")
 
-
-    # create an instance (this loads all the lineages)
-    tb_lineage_collection=snpit(threshold=10)
-
-    # load the VCF file into the SNPIT instance (this automatically resets the list of SNPs for each lineage)
-    tb_lineage_collection.load_vcf(options.input.rstrip())
-
-    # determine the most likely lineage/sub-lineage using snpit
-    (species,lineage,sublineage,percentage)=tb_lineage_collection.determine_lineage()
+    tb=snpit(vcf_file=options.input.rstrip(),threshold=10)
 
     # print("Most likely lineage is ...")
-    if percentage is not None:
-        print("%s\n%20s %16s %16s %.1f %%" % (options.input,species,lineage,sublineage,percentage))
+    if tb.percentage is not None:
+        print("%s\n%20s %16s %16s %.1f %%" % (options.input,tb.species,tb.lineage,tb.sublineage,tb.percentage))
     else:
         print("%s\n%20s %16s %16s %.1f %%" % (options.input,"Unknown","Unknown",None,0))
