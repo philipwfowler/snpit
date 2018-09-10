@@ -14,19 +14,36 @@ import argparse
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input",required=True,help="the path to the VCF file to read and classify (can be zip/gzipped)")
+    parser.add_argument("--fasta",required=False,help="the path to the fasta file to read and classify (should be gzipped)", dest='fasta')
+    parser.add_argument("--vcf", required=False, help="the path to the vcf file to read and classify (can be zip/gzipped)", dest='vcf')
     options = parser.parse_args()
 
+
+    fasta=options.fasta
+    vcf=options.vcf
+    
+    if fasta:
+        input =fasta
+    else:
+        input =vcf
+    
     # now try opening the specified input file
     try:
-        TEST = open(options.input,'r')
+        TEST = open(input,'r')
     except IOError:
-        print("input file "+options.input+" does not exist!")
+        print("input file "+input+" does not exist!")
 
-    tb=snpit(vcf_file=options.input.rstrip(),threshold=10)
+    tb_lineage_collection=snpit(threshold=10)
 
-    # print("Most likely lineage is ...")
-    if tb.percentage is not None:
-        print("%s\n%20s %16s %16s %.1f %%" % (options.input,tb.species,tb.lineage,tb.sublineage,tb.percentage))
+    if vcf:
+        tb_lineage_collection.load_vcf(input.rstrip())
+    elif fasta:
+        tb_lineage_collection.load_fasta(input.rstrip())
     else:
-        print("%s\n%20s %16s %16s %.1f %%" % (options.input,"Unknown","Unknown",None,0))
+        sys.stdout.write('Please provide input files') 
+    (species, lineage, sublineage, percentage)=tb_lineage_collection.determine_lineage()
+# print("Most likely lineage is ...")
+    if percentage is not None:
+        print("%s %20s %16s %16s %.1f %%" % (input,species,lineage,sublineage,percentage))
+    else:
+        print("%s %20s %16s %16s %.1f %%" % (input,"Unknown","Unknown",None,0))
