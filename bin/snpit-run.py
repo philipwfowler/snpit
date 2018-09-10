@@ -25,7 +25,7 @@ if __name__ == "__main__":
         input = fasta
     else:
         input =vcf
-    print(input)
+    
     # now try opening the specified input file
     try:
         TEST = open(input,'r')
