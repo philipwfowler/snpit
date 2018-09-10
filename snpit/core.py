@@ -9,6 +9,9 @@ import vcf
 #BioPython
 from Bio import SeqIO
 
+#gzip
+import gzip
+
 class snpit(object):
 
     """
@@ -64,7 +67,36 @@ class snpit(object):
                 # remember the base in the dictionary using the genome position as the key
                 self.reference_snps[lineage_name][int(cols[0])]=cols[1]
 
+    def load_fasta(self, fasta_file):
+        """
+        adds fasta capability to the SNP-IT package
+        Args:
+            fasta_file: Path to the fasta file to be read
+        """
 
+        # setup the dictionaries of expected SNPs for each lineage
+        self._reset_lineage_snps()
+
+    #open the fasta file for reading
+        with gzip.open(fasta_file, 'rt') as fasta_file:
+            fasta_reader = SeqIO.read(fasta_file,'fasta')
+            self._reset_lineage_snps()
+            self.sample_snps={}
+
+        #  iterate through the lineages
+        for lineage_name in self.lineages:
+
+            self.sample_snps[lineage_name]={}
+
+            # iterate over the positions in the reference set of snps for that lineage
+            for pos in self.reference_snps[lineage_name]:
+                if pos in self.reference_snps[lineage_name].keys():
+                # CAUTION the GenBank File is 1-based, but the lineage files are 0-based
+                # Remember the nucleotide at the defining position
+                    self.sample_snps[lineage_name][int(pos)]=fasta_reader.seq[int(pos)-1]
+
+
+    
     def load_vcf(self,vcf_file):
         """
         Loads the vcf file and then, for each lineage, identify the base at each of the identifying positions in the genome.
