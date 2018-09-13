@@ -1,7 +1,7 @@
 id,species,lineage,sublineage
-dehli,M. tuberculosis,Lineage 1,
+dehli,M. tuberculosis,Lineage 3,
 beijing,M. tuberculosis,Lineage 2,
-eai,M. tuberculosis,Lineage 3,
+eai,M. tuberculosis,Lineage 1,
 lineage4,M. tuberculosis,Lineage 4,
 haarlem,M. tuberculosis,Lineage 4,Haarlem
 lam,M. tuberculosis,Lineage 4,LAM
