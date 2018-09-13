@@ -14,38 +14,19 @@ import argparse
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input",required=True,help="the path to the VCF file to read and classify (can be zip/gzipped)")
+    parser.add_argument("--input",required=True,help="the path to the VCF or FASTA file to read and classify (either can be bzip2ed/gzipped)")
     options = parser.parse_args()
 
-<<<<<<< HEAD
-    fasta = options.fasta
-    vcf= options.vcf
-
-    if fasta:
-        input = fasta
-    else:
-        input =vcf
-    
-=======
->>>>>>> parent of f063497... reverting to version 20d31b5 due to bugs
     # now try opening the specified input file
     try:
         TEST = open(options.input,'r')
     except IOError:
         print("input file "+options.input+" does not exist!")
 
-
     # create an instance (this loads all the lineages)
-    tb_lineage_collection=snpit(threshold=10)
+    tb=snpit(threshold=10,input_file=options.input)
 
-    # load the VCF file into the SNPIT instance (this automatically resets the list of SNPs for each lineage)
-    tb_lineage_collection.load_vcf(options.input.rstrip())
-
-    # determine the most likely lineage/sub-lineage using snpit
-    (lineage,percentage)=tb_lineage_collection.determine_lineage()
-
-    # print("Most likely lineage is ...")
-    if percentage is not None:
-        print("%40s %16s %.1f %%" % (options.input,lineage,percentage))
+    if tb.percentage is not None:
+        print("%s\n%16s %16s %16s %.1f %%" % (options.input,tb.species,tb.lineage,tb.sublineage,tb.percentage))
     else:
-        print("%40s %16s %.1f %%" % (options.input,"none identified",0))
+        print("%s\n%16s" % (options.input,"none identified"))
