@@ -68,15 +68,10 @@ class snpit(object):
                 # remember the base in the dictionary using the genome position as the key
                 self.reference_snps[lineage_name][int(cols[0])]=cols[1]
 
-    def load_fasta(self, fasta_file):
-        """Adds fasta capability to the SNP-IT package
-
-        Args:
-            fasta_file (str): Path to the FASTA file to be read
-        """
+        # let's check if it is compressed
+        if input_file.endswith("gz"):
 
             cols=input_file.split('.')
-
 
             if cols[-2]=="vcf":
                 self.load_vcf(input_file)
