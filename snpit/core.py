@@ -68,20 +68,20 @@ class snpit(object):
                 self.reference_snps[lineage_name][int(cols[0])]=cols[1]
 
     def load_fasta(self, fasta_file):
-        """
-        adds fasta capability to the SNP-IT package
+        """Adds fasta capability to the SNP-IT package
+
         Args:
-            fasta_file: Path to the fasta file to be read
+            fasta_file (str): Path to the FASTA file to be read
         """
 
         # setup the dictionaries of expected SNPs for each lineage
         self._reset_lineage_snps()
 
-    #open the fasta file for reading
+        # open the fasta file for reading
         with gzip.open(fasta_file, 'rt') as fasta_file:
             fasta_reader = SeqIO.read(fasta_file,'fasta')
-            self._reset_lineage_snps()
-            self.sample_snps={}
+
+        self.sample_snps={}
 
         #  iterate through the lineages
         for lineage_name in self.lineages:
@@ -96,13 +96,12 @@ class snpit(object):
                     self.sample_snps[lineage_name][int(pos)]=fasta_reader.seq[int(pos)-1]
 
 
-    
+
     def load_vcf(self,vcf_file):
-        """
-        Loads the vcf file and then, for each lineage, identify the base at each of the identifying positions in the genome.
+        """Loads the vcf file and then, for each lineage, identify the base at each of the identifying positions in the genome.
 
         Args:
-            vcf_file: Path to the VCF file to be read
+            vcf_file (str): Path to the VCF file to be read
         """
 
         # setup the dictionaries of expected SNPs for each lineage
