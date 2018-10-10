@@ -94,12 +94,6 @@ class snpit(object):
         # then work out the lineage
         (self.species,self.lineage,self.sublineage,self.percentage)=self.determine_lineage()
 
-
-
-<<<<<<< HEAD
-
-=======
->>>>>>> 5c434daf30c4e90694de4f37affdb18c57dc2ba3
     def load_vcf(self,vcf_file):
         """Loads the vcf file and then, for each lineage, identify the base at each of the identifying positions in the genome.
 
