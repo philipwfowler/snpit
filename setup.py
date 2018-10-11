@@ -13,6 +13,5 @@ setup(
     scripts=["bin/snpit-run.py"],
     license='unknown',
     long_description=open('README.md').read(),
-    include_package_data=True,
     zip_safe=False
 )
