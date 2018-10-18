@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import pkg_resources, codecs, csv
+import pkg_resources, codecs, csv, gzip
 import operator
 
 # PyVCF
