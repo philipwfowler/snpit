@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import pkg_resources, codecs, csv
+import pkg_resources, codecs, csv, gzip
 import operator
 
 # PyVCF
@@ -28,18 +28,18 @@ class snpit(object):
         self.threshold=threshold
 
         # construct the relative path in the package to the library file which contains a list of all the lineages and sub-lineages
-        resource_path = '/'.join(('..','lib', 'library.csv'))
+        resource_path = '/'.join(('..','lib','library.csv'))
 
         utf8_reader = codecs.getreader("utf-8")
 
         # open a stream object ready for reading
         library_file = pkg_resources.resource_stream("snpit", resource_path)
 
+        reader = csv.DictReader(utf8_reader(library_file))
+
         self.reference_snps={}
 
         self.lineages={}
-
-        reader = csv.DictReader(utf8_reader(library_file))
 
         # read the library file line-by-line
         for record in reader:
@@ -93,7 +93,6 @@ class snpit(object):
 
         # then work out the lineage
         (self.species,self.lineage,self.sublineage,self.percentage)=self.determine_lineage()
-
 
     def load_vcf(self,vcf_file):
         """Loads the vcf file and then, for each lineage, identify the base at each of the identifying positions in the genome.
