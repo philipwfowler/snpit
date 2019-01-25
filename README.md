@@ -26,7 +26,7 @@ Resolving deltas: 100% (58/58), done.
 then enter the directory and install
 ```
 > cd snpit
-> python setup install --user
+> python setup.py install --user
 ```
 The `--user` flag ensures that it is only installed for the user (avoiding the need to know the root/sudo password). To system-wide install simply omit the flag.
 
