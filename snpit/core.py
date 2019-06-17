@@ -18,11 +18,12 @@ class snpit(object):
 
         """
         Args:
-            threshold: The percentage of snps above which a sample is considered to belong to a lineage.
+            input_file (str): FASTA/VCF file to read variants from.
+            threshold (float): The percentage of snps above which a sample is
+            considered to belong to a lineage.
+            ignore_filter (bool): Whether to ignore the FILTER column in VCF input.
         """
-
-        # set the threshold as a class attribute
-        self.threshold=threshold
+        self.threshold = threshold
         self.ignore_filter = ignore_filter
 
         # construct the relative path in the package to the library file which contains a list of all the lineages and sub-lineages
