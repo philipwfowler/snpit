@@ -4,10 +4,7 @@ import pkg_resources, codecs, csv, gzip
 import operator
 from .genotype import Genotype
 
-# PyVCF
 import vcf
-
-#BioPython
 from Bio import SeqIO
 
 class snpit(object):
