@@ -15,6 +15,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--input",required=True,help="the path to the VCF or FASTA file to read and classify (either can be bzip2ed/gzipped)")
+    parser.add_argument("--ignore_filter", help="Whether to ignore the FILTER column.", action="store_true")
     options = parser.parse_args()
 
     # now try opening the specified input file
@@ -24,7 +25,7 @@ if __name__ == "__main__":
         print("input file "+options.input+" does not exist!")
 
     # create an instance (this loads all the lineages)
-    tb=snpit(threshold=10,input_file=options.input)
+    tb=snpit(threshold=10,input_file=options.input, ignore_filter=options.ignore_filter)
 
     if tb.percentage is not None:
         print("%s\n%16s %16s %16s %.1f %%" % (options.input,tb.species,tb.lineage,tb.sublineage,tb.percentage))

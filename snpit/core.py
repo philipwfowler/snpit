@@ -17,7 +17,7 @@ class snpit(object):
     The methods have been separated so it can be incorporated into single Python scripts that processes multiple VCF files.
     """
 
-    def __init__(self,input_file=None,threshold=10):
+    def __init__(self, input_file=None, threshold=10, ignore_filter=False):
 
         """
         Args:
@@ -26,6 +26,7 @@ class snpit(object):
 
         # set the threshold as a class attribute
         self.threshold=threshold
+        self.ignore_filter = ignore_filter
 
         # construct the relative path in the package to the library file which contains a list of all the lineages and sub-lineages
         resource_path = '/'.join(('..','lib','library.csv'))
@@ -109,25 +110,34 @@ class snpit(object):
 
         # read the VCF file line-by-line
         for record in vcf_reader:
+            if self.ignore_filter or record.FILTER:
+                self.lineage_classify_position(record)
 
-            # consider each lineage in turn
-            for lineage_name in self.lineages:
+    def lineage_classify_position(self, record):
+        """Determine what lineage(s) (if any) a VCF record belongs to.
 
-                # only proceed if the genome position occurs in the list of identifiable positions
-                if record.POS in self.reference_snps[lineage_name].keys():
+        Args:
+            record (vcf.model._Record): A VCF record object.
+        """
+        # consider each lineage in turn
+        for lineage_name in self.lineages:
 
-                    # parse the record
-                    for sample in record.samples:
-                        geno = sample['GT'][0]
+            # only proceed if the genome position occurs in the list of identifiable positions
+            if record.POS in self.reference_snps[lineage_name].keys():
 
-                        # if there is a null call, record a hyphen which won't match, regardless of the reference
-                        if geno == '.':
+                # parse the record
+                for sample in record.samples:
+                    geno = sample['GT'][0]
 
-                            self.sample_snps[lineage_name][int(record.POS)]="-"
+                    # if there is a null call, record a hyphen which won't match, regardless of the reference
+                    if geno == '.':
 
-                        # otherwise replace the H37Rv base with the actual base from the VCF file
-                        elif geno != 0:
-                            self.sample_snps[lineage_name][int(record.POS)]=record.ALT[int(geno)-1]
+                        self.sample_snps[lineage_name][int(record.POS)] = "-"
+
+                    # otherwise replace the H37Rv base with the actual base from the VCF file
+                    elif geno != 0:
+                        self.sample_snps[lineage_name][int(record.POS)] = record.ALT[
+                            int(geno) - 1]
 
     def load_fasta(self,fasta_file,compression=False):
         """
