@@ -2,6 +2,7 @@
 
 import pkg_resources, codecs, csv, gzip
 import operator
+from .genotype import Genotype
 
 # PyVCF
 import vcf
@@ -119,24 +120,22 @@ class snpit(object):
         Args:
             record (vcf.model._Record): A VCF record object.
         """
+        record_position = int(record.POS)
         for lineage_name in self.lineages:
-
-            record_position_in_lineage_positions = record.POS in self.reference_snps[lineage_name].keys()
-            if record_position_in_lineage_positions:
-
-                # parse the record
+            lineage_positions = self.reference_snps[lineage_name].keys()
+            record_pos_in_lineage_positions = record_position in lineage_positions
+            if record_pos_in_lineage_positions:
                 for sample in record.samples:
-                    geno = sample['GT'][0]
-
-                    # if there is a null call, record a hyphen which won't match, regardless of the reference
-                    if geno == '.':
-
-                        self.sample_snps[lineage_name][int(record.POS)] = "-"
-
-                    # otherwise replace the H37Rv base with the actual base from the VCF file
-                    elif geno != 0:
-                        self.sample_snps[lineage_name][int(record.POS)] = record.ALT[
-                            int(geno) - 1]
+                    genotype = Genotype.from_string(sample['GT'])
+                    if genotype.is_reference() or genotype.is_heterozygous():
+                        continue
+                    elif genotype.is_null():
+                        # record a hyphen which won't match, regardless of the reference
+                        self.sample_snps[lineage_name][record_position] = "-"
+                    else:
+                        # replace the H37Rv base with the actual base from the VCF file
+                        sample_variant = record.ALT[int(genotype.call()[0]) - 1]
+                        self.sample_snps[lineage_name][record_position] = sample_variant
 
     def load_fasta(self,fasta_file,compression=False):
         """
