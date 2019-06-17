@@ -119,11 +119,10 @@ class snpit(object):
         Args:
             record (vcf.model._Record): A VCF record object.
         """
-        # consider each lineage in turn
         for lineage_name in self.lineages:
 
-            # only proceed if the genome position occurs in the list of identifiable positions
-            if record.POS in self.reference_snps[lineage_name].keys():
+            record_position_in_lineage_positions = record.POS in self.reference_snps[lineage_name].keys()
+            if record_position_in_lineage_positions:
 
                 # parse the record
                 for sample in record.samples:
