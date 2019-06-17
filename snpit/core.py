@@ -2,6 +2,7 @@
 
 import pkg_resources, codecs, csv, gzip
 import operator
+from pathlib import Path
 from .genotype import Genotype
 import vcf
 from Bio import SeqIO
@@ -65,28 +66,15 @@ class snpit(object):
                 # remember the base in the dictionary using the genome position as the key
                 self.reference_snps[lineage_name][int(cols[0])]=cols[1]
 
-        # let's check if it is compressed
-        if input_file.endswith("gz"):
+        compressed = True if input_file.endswith("gz") else False
+        suffixes = Path(input_file).suffixes
 
-            cols=input_file.split('.')
-
-            if cols[-2]=="vcf":
-                self.load_vcf(input_file)
-
-            elif cols[-2]=="fasta":
-                self.load_fasta(input_file,compression=True)
-
-            else:
-                raise Exception("Only VCF and FASTA files are allowed as inputs (may be compressed with gz,bzip2)")
-
-        elif input_file.endswith("vcf"):
+        if ".vcf" in suffixes:
             self.load_vcf(input_file)
-
-        elif input_file.endswith("fasta"):
-            self.load_fasta(input_file,compression=False)
-
+        elif any(ext in suffixes for ext in [".fa", ".fasta"]):
+            self.load_fasta(input_file,compression=compressed)
         else:
-            raise Exception("Only VCF and FASTA files are allowed as inputs (may be compressed with gz,bzip2)")
+            raise Exception("Only VCF and FASTA files are allowed as inputs (may be compressed with gzip,bzip2)")
 
         # then work out the lineage
         (self.species,self.lineage,self.sublineage,self.percentage)=self.determine_lineage()
