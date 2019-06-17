@@ -10,6 +10,8 @@ import sys
 from snpit import snpit
 import argparse
 
+THRESHOLD = 10.0
+
 
 def cli():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -28,28 +30,37 @@ def cli():
         default="-",
     )
     parser.add_argument(
+        "--threshold",
+        type=float,
+        help="""The percentage of snps above which a sample is considered to belong to 
+        a lineage. [{}]""".format(
+            THRESHOLD
+        ),
+        default=THRESHOLD,
+    )
+    parser.add_argument(
         "--ignore_filter",
         help="Whether to ignore the FILTER column.",
         action="store_true",
     )
-    options = parser.parse_args()
+    args = parser.parse_args()
 
-    if options.output == "-":
-        options.output = sys.stdout
+    if args.output == "-":
+        args.output = sys.stdout
     else:
-        p = Path(options.output)
+        p = Path(args.output)
         if not p.parent.is_dir():
             raise NotADirectoryError(
                 "Directory specified for output file does not exist: {}".format(
                     p.parent
                 )
             )
-        options.output = p.open("w")
+        args.output = p.open("w")
 
-    if not Path(options.input).is_file():
-        raise FileNotFoundError("Input file {} does not exist!".format(options.input))
+    if not Path(args.input).is_file():
+        raise FileNotFoundError("Input file {} does not exist!".format(args.input))
 
-    return options
+    return args
 
 
 if __name__ == "__main__":
@@ -57,7 +68,9 @@ if __name__ == "__main__":
 
     # create an instance (this loads all the lineages)
     tb = snpit(
-        threshold=10, input_file=options.input, ignore_filter=options.ignore_filter
+        threshold=options.threshold,
+        input_file=options.input,
+        ignore_filter=options.ignore_filter,
     )
 
     if tb.percentage is not None:
