@@ -120,22 +120,40 @@ class snpit(object):
         Args:
             record (vcf.model._Record): A VCF record object.
         """
-        record_position = int(record.POS)
         for lineage_name in self.lineages:
             lineage_positions = self.reference_snps[lineage_name].keys()
-            record_pos_in_lineage_positions = record_position in lineage_positions
-            if record_pos_in_lineage_positions:
-                for sample in record.samples:
-                    genotype = Genotype.from_string(sample['GT'])
-                    if genotype.is_reference() or genotype.is_heterozygous():
-                        continue
-                    elif genotype.is_null():
-                        # record a hyphen which won't match, regardless of the reference
-                        self.sample_snps[lineage_name][record_position] = "-"
-                    else:
-                        # replace the H37Rv base with the actual base from the VCF file
-                        sample_variant = record.ALT[int(genotype.call()[0]) - 1]
-                        self.sample_snps[lineage_name][record_position] = sample_variant
+
+            if record.POS not in lineage_positions:
+                continue
+
+            for sample in record.samples:
+                genotype = Genotype.from_string(sample['GT'])
+                variant = self.get_sample_genotyped_variant(genotype, record)
+
+                if variant is not None:
+                    self.sample_snps[lineage_name][record.POS] = variant
+
+    @staticmethod
+    def get_sample_genotyped_variant(genotype, record):
+        """Retrieves the variant to replace the reference base with for a sample based
+        on it's genotype call.
+
+        Args:
+            genotype (Genotype): The genotype call for the sample.
+            record (vcf.model._Record): A VCF record object.
+        Returns:
+            str or None: A hyphen if the call is null (ie ./.) or the alt variant if
+            the call is alt. Returns None is the call is ref or heterozygous.
+        """
+        if genotype.is_reference() or genotype.is_heterozygous():
+            return None
+        elif genotype.is_null():
+            # record a hyphen which won't match, regardless of the reference
+            return "-"
+        elif genotype.is_alt():
+            # replace the H37Rv base with the actual base from the VCF file
+            alt_variant = record.ALT[int(genotype.call()[0]) - 1]
+            return alt_variant
 
     def load_fasta(self,fasta_file,compression=False):
         """

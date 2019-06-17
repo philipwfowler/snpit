@@ -29,6 +29,13 @@ class Genotype:
             self.call1 == self.call2 or self.call2 is None
         )
 
+    def is_alt(self):
+        return (
+            not self.is_heterozygous()
+            and not self.is_reference()
+            and not self.is_null()
+        )
+
     @staticmethod
     def from_string(s):
         """Parse a VCF string into a genotype. Expected format is '0/0'"""

@@ -136,6 +136,41 @@ def test_isReference_returnsFalseForAltAltCall():
 
     assert not g.is_reference()
 
+def test_isAlt_returnsFalseForRefNoneCall():
+    g = Genotype("0")
+
+    assert not g.is_alt()
+
+
+def test_isAlt_returnsFalseForRefRefCall():
+    g = Genotype("0", "0")
+
+    assert not g.is_alt()
+
+
+def test_isAlt_returnsTrueForAltNoneCall():
+    g = Genotype("1")
+
+    assert g.is_alt()
+
+
+def test_isAlt_returnsFalseForHetCall():
+    g = Genotype("0", "1")
+
+    assert not g.is_alt()
+
+
+def test_isAlt_returnsFalseForNullCall():
+    g = Genotype(".", ".")
+
+    assert not g.is_alt()
+
+
+def test_isAlt_returnsTrueForAltAltCall():
+    g = Genotype("1", "1")
+
+    assert g.is_alt()
+
 
 def test_fromString_validStringReturnsDiploidRefGenotype():
     actual = Genotype.from_string("0/0")
