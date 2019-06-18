@@ -1,18 +1,25 @@
 #! /usr/bin/env python
 
-import pkg_resources, codecs, csv, gzip
+import csv
+import gzip
 import operator
 from pathlib import Path
-from .genotype import Genotype
+
 import vcf
 from Bio import SeqIO
+
+from .genotype import Genotype
+
+LIBRARY_DIR = Path("lib").absolute()
 
 
 class snpit(object):
     """
-    The snpit class is designed to take a VCF file and return the most likely lineage based on Sam Lipworth's SNP-IT.
+    The snpit class is designed to take a VCF file and return the most likely lineage
+    based on Sam Lipworth's SNP-IT.
 
-    The methods have been separated so it can be incorporated into single Python scripts that processes multiple VCF files.
+    The methods have been separated so it can be incorporated into single Python
+    scripts that processes multiple VCF files.
     """
 
     def __init__(self, input_file, threshold, ignore_filter=False):
@@ -28,43 +35,34 @@ class snpit(object):
         self.ignore_filter = ignore_filter
 
         # library file which contains a list of all the lineages and sub-lineages
-        library_csv = Path("lib/library.csv").absolute()
-        reader = csv.DictReader(library_csv.open())
+        library_csv = LIBRARY_DIR / "library.csv"
+        library = csv.DictReader(library_csv.open())
 
         self.reference_snps = {}
 
-        self.lineages = {}
+        self.lineages_metadata = {}
 
-        # read the library file line-by-line
-        for record in reader:
-
-            # remove the carriage return and decode from binary
+        for record in library:
             lineage_name = record["id"]
 
             # remember the lineage meta data in a dictionary
-            self.lineages[lineage_name] = {
+            self.lineages_metadata[lineage_name] = {
                 "species": record["species"],
                 "lineage": record["lineage"],
                 "sublineage": record["sublineage"],
             }
 
-            # now we know the name construct the relative path to this lineage file
-            lineage_path = "/".join(("..", "lib", lineage_name))
+            lineage_path = LIBRARY_DIR / lineage_name
 
-            # open a stream object to that file ready for reading
-            lineage_file = pkg_resources.resource_stream("snpit", lineage_path)
-
-            # initialise the dictionary for this lineage
             self.reference_snps[lineage_name] = {}
 
-            # read the lineage file, line-by-line
-            for line in lineage_file:
+            with lineage_path.open() as lineage_file:
+                for line in lineage_file:
+                    lineage_variant = line.rstrip().split("\t")
+                    position = int(lineage_variant[0])
+                    base = lineage_variant[1]
 
-                # remove the carriage return, decode from binary, and split on tabs
-                cols = line.rstrip().decode("UTF-8").split("\t")
-
-                # remember the base in the dictionary using the genome position as the key
-                self.reference_snps[lineage_name][int(cols[0])] = cols[1]
+                    self.reference_snps[lineage_name][position] = base
 
         compressed = True if input_file.endswith("gz") else False
         suffixes = Path(input_file).suffixes
@@ -87,7 +85,8 @@ class snpit(object):
         ) = self.determine_lineage()
 
     def load_vcf(self, vcf_file):
-        """Loads the vcf file and then, for each lineage, identify the base at each of the identifying positions in the genome.
+        """Loads the vcf file and then, for each lineage, identify the base at each of
+        the identifying positions in the genome.
 
         Args:
             vcf_file (str): Path to the VCF file to be read
@@ -110,7 +109,7 @@ class snpit(object):
         Args:
             record (vcf.model._Record): A VCF record object.
         """
-        for lineage_name in self.lineages:
+        for lineage_name in self.lineages_metadata:
             lineage_positions = self.reference_snps[lineage_name].keys()
 
             if record.POS not in lineage_positions:
@@ -147,7 +146,8 @@ class snpit(object):
 
     def load_fasta(self, fasta_file, compression=False):
         """
-        Loads a supplied fasta file and then, for each lineage, identify the base at each of the identifying positions
+        Loads a supplied fasta file and then, for each lineage, identify the base at
+        each of the identifying positions
 
         Args:
          fasta_file (str): Path to the fasta file to be read
@@ -159,15 +159,13 @@ class snpit(object):
         self.sample_snps = {}
 
         # open the fasta file for reading
-        if compression:
-            with gzip.open(fasta_file, "rt") as fasta_file:
-                fasta_reader = SeqIO.read(fasta_file, "fasta")
-        else:
-            with open(fasta_file, "rt") as fasta_file:
-                fasta_reader = SeqIO.read(fasta_file, "fasta")
+        open_fn = gzip.open if compression else open
+
+        with open_fn(fasta_file, "rt") as fasta_file:
+            fasta_reader = SeqIO.read(fasta_file, "fasta")
 
         #  iterate through the lineages
-        for lineage_name in self.lineages:
+        for lineage_name in self.lineages_metadata:
 
             self.sample_snps[lineage_name] = {}
 
@@ -183,26 +181,25 @@ class snpit(object):
 
     def _reset_lineage_snps(self):
         """
-        For each lineage creates a dictionary of the positions and expected nucleotides for TB that
-        define that lineage.
+        For each lineage creates a dictionary of the positions and expected nucleotides
+        for TB that define that lineage.
 
         This is required because the VCF files only list changes relative to H37Rv.
-        Hence these dictionaries are then changed when mutations at these positions are encountered.
+        Hence these dictionaries are then changed when mutations at these positions are
+        encountered.
         """
 
         # make the relative path to the H37Rv TB reference GenBank file
-        genbank_path = "/".join(("..", "lib", "H37Rv.gbk"))
-
-        # open a stream object ready for reading
-        genbank_file = pkg_resources.resource_filename("snpit", genbank_path)
+        genbank_path = LIBRARY_DIR / "H37Rv.gbk"
 
         # read the reference genome using BioPython
-        reference_genome = SeqIO.read(genbank_file, "genbank")
+        with genbank_path.open() as genbank_file:
+            reference_genome = SeqIO.read(genbank_file, "genbank")
 
         self.sample_snps = {}
 
         #  iterate through the lineages
-        for lineage_name in self.lineages:
+        for lineage_name in self.lineages_metadata:
 
             self.sample_snps[lineage_name] = {}
 
@@ -217,7 +214,8 @@ class snpit(object):
 
     def determine_lineage(self):
         """
-        Having read the VCF file, for each lineage, calculate the percentage of SNP present in the sample.
+        Having read the VCF file, for each lineage, calculate the percentage of SNP
+        present in the sample.
         Note that this means the percentages will not add up to 100%.
 
         Returns:
@@ -227,7 +225,7 @@ class snpit(object):
         self.percentage = {}
 
         # consider lineage-by-lineage
-        for lineage_name in self.lineages:
+        for lineage_name in self.lineages_metadata:
 
             reference_set = []
 
@@ -259,26 +257,28 @@ class snpit(object):
 
             # look at the next-highest lineage if the top one is Lineage 4 but with no sublineage
             if (
-                self.lineages[identified_lineage_name]["lineage"] == "Lineage 4"
-                and self.lineages[identified_lineage_name]["sublineage"] == ""
+                self.lineages_metadata[identified_lineage_name]["lineage"]
+                == "Lineage 4"
+                and self.lineages_metadata[identified_lineage_name]["sublineage"] == ""
             ):
 
                 next_lineage_name = self.results[1][0]
                 next_lineage_percentage = self.results[1][1]
 
-                # if the next best lineage is ALSO lineage 4, but this one has a sublineage and is above the threshold, report that one instead
+                # if the next best lineage is ALSO lineage 4, but this one has a
+                # sublineage and is above the threshold, report that one instead
                 if (
-                    self.lineages[next_lineage_name]["lineage"] == "Lineage 4"
-                    and self.lineages[next_lineage_name]["sublineage"] != ""
+                    self.lineages_metadata[next_lineage_name]["lineage"] == "Lineage 4"
+                    and self.lineages_metadata[next_lineage_name]["sublineage"] != ""
                     and next_lineage_percentage > self.threshold
                 ):
 
                     identified_lineage_name = next_lineage_name
 
             return (
-                self.lineages[identified_lineage_name]["species"],
-                self.lineages[identified_lineage_name]["lineage"],
-                self.lineages[identified_lineage_name]["sublineage"],
+                self.lineages_metadata[identified_lineage_name]["species"],
+                self.lineages_metadata[identified_lineage_name]["lineage"],
+                self.lineages_metadata[identified_lineage_name]["sublineage"],
                 identified_lineage_percentage,
             )
 
