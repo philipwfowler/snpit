@@ -5,17 +5,17 @@ from snpit.lineage import Lineage
 from snpit.core import load_lineages_from_csv, SnpIt
 
 
-def get_record(type):
+def get_record(record_type):
     v = vcf.Reader(open("test_cases/test.vcf"))
     records = [record for record in v]
 
-    if type == "ref":
+    if record_type == "ref":
         idx = 1
-    elif type == "alt":
+    elif record_type == "alt":
         idx = 0
-    elif type == "null":
+    elif record_type == "null":
         idx = 3
-    elif type == "het":
+    elif record_type == "het":
         idx = 2
     else:
         return None
@@ -89,5 +89,14 @@ def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
             sublineage="",
         ),
     ]
+
+    assert actual == expected
+
+
+def test_classifyVcf_exampleVcfReturnsCorrectClassification():
+    snpit = SnpIt(10, True)
+
+    actual = snpit.classify_vcf("../example/example.vcf")
+    expected = {"example": ("M. tuberculosis", "Lineage 2", "", 97.368_421_052_631_58)}
 
     assert actual == expected

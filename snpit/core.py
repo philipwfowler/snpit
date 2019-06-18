@@ -13,7 +13,7 @@ from Bio import SeqIO
 from .genotype import Genotype
 from .lineage import Lineage
 
-LIBRARY_DIR = Path("lib").absolute()
+LIBRARY_DIR = Path(__file__).parent.parent / "lib"
 
 
 class SnpIt(object):
@@ -175,7 +175,7 @@ class SnpIt(object):
                         int(pos) - 1
                     ]
 
-    def determine_lineage(self, lineage_counts):
+    def determine_lineage(self, lineage_counts: Counter):
         """
         Having read the VCF file, for each lineage, calculate the percentage of SNP
         present in the sample.
@@ -185,22 +185,22 @@ class SnpIt(object):
             tuple of (lineage,percentage)
         """
 
-        self.percentage = {}
+        percentage = {}
 
         for lineage in self.lineages:
             shared_calls = lineage_counts[lineage.name]
             ref_calls = len(lineage.snps)
 
             # thereby calculate the percentage of SNPs in this sample that match the lineage
-            self.percentage[lineage] = (shared_calls / ref_calls) * 100
+            percentage[lineage] = (shared_calls / ref_calls) * 100
 
         # create an ordered list of tuples of (lineage,percentage) in descending order
-        self.results = sorted(
-            self.percentage.items(), key=operator.itemgetter(1), reverse=True
+        results = sorted(
+            percentage.items(), key=operator.itemgetter(1), reverse=True
         )
 
-        identified_lineage = self.results[0][0]
-        identified_lineage_percentage = self.results[0][1]
+        identified_lineage = results[0][0]
+        identified_lineage_percentage = results[0][1]
 
         # if the top lineage is above the specified threshold, return the classification
         if identified_lineage_percentage > self.threshold:
@@ -211,8 +211,8 @@ class SnpIt(object):
                 and identified_lineage.sublineage == ""
             ):
 
-                next_best_lineage = self.results[1][0]
-                next_best_lineage_percentage = self.results[1][1]
+                next_best_lineage = results[1][0]
+                next_best_lineage_percentage = results[1][1]
 
                 # if the next best lineage is ALSO lineage 4, but this one has a
                 # sublineage and is above the threshold, report that one instead
