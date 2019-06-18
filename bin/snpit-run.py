@@ -39,8 +39,8 @@ def cli():
         default=THRESHOLD,
     )
     parser.add_argument(
-        "--ignore_filter",
-        help="Whether to ignore the FILTER column.",
+        "--filter",
+        help="Whether to adhere to the FILTER column.",
         action="store_true",
     )
     args = parser.parse_args()
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     tb = snpit(
         threshold=options.threshold,
         input_file=options.input,
-        ignore_filter=options.ignore_filter,
+        ignore_filter=not options.filter,
     )
 
     if tb.percentage is not None:

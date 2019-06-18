@@ -36,25 +36,12 @@ class snpit(object):
 
         # library file which contains a list of all the lineages and sub-lineages
         library_csv = LIBRARY_DIR / "library.csv"
-        library = csv.DictReader(library_csv.open())
-
+        self.lineages_metadata = load_lineage_metadata_from_file(library_csv)
         self.reference_snps = {}
 
-        self.lineages_metadata = {}
-
-        for record in library:
-            lineage_name = record["id"]
-
-            # remember the lineage meta data in a dictionary
-            self.lineages_metadata[lineage_name] = {
-                "species": record["species"],
-                "lineage": record["lineage"],
-                "sublineage": record["sublineage"],
-            }
-
-            lineage_path = LIBRARY_DIR / lineage_name
-
+        for lineage_name in self.lineages_metadata:
             self.reference_snps[lineage_name] = {}
+            lineage_path = LIBRARY_DIR / lineage_name
 
             with lineage_path.open() as lineage_file:
                 for line in lineage_file:
@@ -285,3 +272,20 @@ class snpit(object):
         # finally, no strain must be above the threshold percentage so return Nones as "Don't know"
         else:
             return (None, None, None, None)
+
+
+def load_lineage_metadata_from_file(filepath: Path) -> dict:
+    """Load lineage metadata from a CVS file and return as a dictionary."""
+    library = csv.DictReader(filepath.open())
+    lineages_metadata = dict()
+
+    for record in library:
+        lineage_name = record["id"]
+
+        lineages_metadata[lineage_name] = {
+            "species": record["species"],
+            "lineage": record["lineage"],
+            "sublineage": record["sublineage"],
+        }
+
+    return lineages_metadata
