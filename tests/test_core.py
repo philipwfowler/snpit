@@ -1,6 +1,8 @@
 import vcf
+from pathlib import Path
 from snpit.genotype import Genotype
-from snpit.core import *
+from snpit.lineage import Lineage
+from snpit.core import load_lineages_from_csv, snpit
 
 
 def get_record(type):
@@ -60,24 +62,32 @@ def test_getSampleGenotypedVariant_hetCallReturnsNone():
     assert actual == expected
 
 
-def test_loadLineageMetadataFromFile_emptyFileReturnsEmptyDict():
+def test_loadLineagesFromCsv_emptyFileReturnsEmptyDict():
     filepath = Path("test_cases/empty.csv")
 
-    actual = load_lineage_metadata_from_file(filepath)
-    expected = dict()
+    actual = load_lineages_from_csv(filepath)
+    expected = []
 
     assert actual == expected
 
 
-def test_loadLineageMetadataFromFile_fileWithTwoEntriesReturnsDictWithTwoLineages():
+def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
     filepath = Path("test_cases/test_library.csv")
 
-    actual = load_lineage_metadata_from_file(filepath)
-    expected = {
-        "indo-oceanic": dict(
-            species="M. tuberculosis", lineage="Lineage 1", sublineage="Sublineage 7"
+    actual = load_lineages_from_csv(filepath)
+    expected = [
+        Lineage(
+            name="indo-oceanic",
+            species="M. tuberculosis",
+            lineage="Lineage 1",
+            sublineage="Sublineage 7",
         ),
-        "beijing": dict(species="M. tuberculosis", lineage="Lineage 2", sublineage=""),
-    }
+        Lineage(
+            name="beijing",
+            species="M. tuberculosis",
+            lineage="Lineage 2",
+            sublineage="",
+        ),
+    ]
 
     assert actual == expected

@@ -12,6 +12,18 @@ class Lineage:
     def __eq__(self, other):
         return self.name == other.name
 
+    def add_snps(self, lineage_variants_file: Path):
+        """Adds SNP information to lineage from a variant file. The variant file must
+        be in the format position\tbase
+        """
+        with lineage_variants_file.open() as lineage_file:
+            for line in lineage_file:
+                lineage_variant = line.rstrip().split("\t")
+                position = int(lineage_variant[0])
+                base = lineage_variant[1]
+
+                self.snps[position] = base
+
     @staticmethod
     def from_csv_entry(entry: dict) -> "Lineage":
         """Create a Lineage object from a CSV DictReader entry. Designed to work with

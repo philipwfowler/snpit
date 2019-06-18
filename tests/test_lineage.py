@@ -31,6 +31,34 @@ def test_inequalityOperator_twoNonEqualReturnsTrue():
     assert lineage1 != lineage2
 
 
+def test_addSnps_emptyFileSnpsRemainEmpty():
+    lineage_variant_file = Path("test_cases/empty.tsv")
+    lineage = Lineage()
+    lineage.add_snps(lineage_variant_file)
+
+    actual = lineage.snps
+    expected = dict()
+
+    assert actual == expected
+
+
+def test_addSnps_realFileSnpsContainAllEntries():
+    lineage_variant_file = Path("test_cases/test_lineage.tsv")
+    lineage = Lineage()
+    lineage.add_snps(lineage_variant_file)
+
+    actual = lineage.snps
+    expected = {
+        1_011_511: "C",
+        1_022_003: "C",
+        1_028_217: "A",
+        1_034_758: "T",
+        1_071_966: "G",
+    }
+
+    assert actual == expected
+
+
 def test_fromCsvEntry_emptyEntryReturnsEmptyLineage():
     entry = dict()
 

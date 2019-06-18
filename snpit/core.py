@@ -1,14 +1,16 @@
 #! /usr/bin/env python
-
+import sys
 import csv
 import gzip
 import operator
 from pathlib import Path
+from typing import List
 
 import vcf
 from Bio import SeqIO
 
 from .genotype import Genotype
+from .lineage import Lineage
 
 LIBRARY_DIR = Path("lib").absolute()
 
@@ -22,40 +24,29 @@ class snpit(object):
     scripts that processes multiple VCF files.
     """
 
-    def __init__(self, input_file, threshold, ignore_filter=False):
+    def __init__(self, input_file: str, threshold: float, ignore_filter=False):
 
         """
         Args:
-            input_file (str): FASTA/VCF file to read variants from.
-            threshold (float): The percentage of snps above which a sample is
+            input_file: FASTA/VCF file to read variants from.
+            threshold: The percentage of snps above which a sample is
             considered to belong to a lineage.
-            ignore_filter (bool): Whether to ignore the FILTER column in VCF input.
+            ignore_filter: Whether to ignore the FILTER column in VCF input.
         """
         self.threshold = threshold
         self.ignore_filter = ignore_filter
 
         # library file which contains a list of all the lineages and sub-lineages
         library_csv = LIBRARY_DIR / "library.csv"
-        self.lineages_metadata = load_lineage_metadata_from_file(library_csv)
-        self.reference_snps = {}
 
-        for lineage_name in self.lineages_metadata:
-            self.reference_snps[lineage_name] = {}
-            lineage_path = LIBRARY_DIR / lineage_name
-
-            with lineage_path.open() as lineage_file:
-                for line in lineage_file:
-                    lineage_variant = line.rstrip().split("\t")
-                    position = int(lineage_variant[0])
-                    base = lineage_variant[1]
-
-                    self.reference_snps[lineage_name][position] = base
+        self.lineages = load_lineages_from_csv(library_csv)
+        self.add_snps_to_all_lineages()
 
         compressed = True if input_file.endswith("gz") else False
         suffixes = Path(input_file).suffixes
 
         if ".vcf" in suffixes:
-            self.load_vcf(input_file)
+            self.classify_vcf(input_file)
         elif any(ext in suffixes for ext in [".fa", ".fasta"]):
             self.load_fasta(input_file, compression=compressed)
         else:
@@ -71,7 +62,22 @@ class snpit(object):
             self.percentage,
         ) = self.determine_lineage()
 
-    def load_vcf(self, vcf_file):
+    def add_snps_to_all_lineages(self):
+        for lineage in self.lineages:
+            lineage_variants_file = LIBRARY_DIR / lineage.name
+
+            if not lineage_variants_file.exists():
+                print(
+                    "Lineage file {} does not exist for lineage {}".format(
+                        lineage_variants_file, lineage.name
+                    ),
+                    file=sys.stderr,
+                )
+                continue
+
+            lineage.add_snps(lineage_variants_file)
+
+    def classify_vcf(self, vcf_file):
         """Loads the vcf file and then, for each lineage, identify the base at each of
         the identifying positions in the genome.
 
@@ -96,7 +102,7 @@ class snpit(object):
         Args:
             record (vcf.model._Record): A VCF record object.
         """
-        for lineage_name in self.lineages_metadata:
+        for lineage_name in self.lineages:
             lineage_positions = self.reference_snps[lineage_name].keys()
 
             if record.POS not in lineage_positions:
@@ -152,7 +158,7 @@ class snpit(object):
             fasta_reader = SeqIO.read(fasta_file, "fasta")
 
         #  iterate through the lineages
-        for lineage_name in self.lineages_metadata:
+        for lineage_name in self.lineages:
 
             self.sample_snps[lineage_name] = {}
 
@@ -186,7 +192,7 @@ class snpit(object):
         self.sample_snps = {}
 
         #  iterate through the lineages
-        for lineage_name in self.lineages_metadata:
+        for lineage_name in self.lineages:
 
             self.sample_snps[lineage_name] = {}
 
@@ -212,7 +218,7 @@ class snpit(object):
         self.percentage = {}
 
         # consider lineage-by-lineage
-        for lineage_name in self.lineages_metadata:
+        for lineage_name in self.lineages:
 
             reference_set = []
 
@@ -244,9 +250,8 @@ class snpit(object):
 
             # look at the next-highest lineage if the top one is Lineage 4 but with no sublineage
             if (
-                self.lineages_metadata[identified_lineage_name]["lineage"]
-                == "Lineage 4"
-                and self.lineages_metadata[identified_lineage_name]["sublineage"] == ""
+                self.lineages[identified_lineage_name]["lineage"] == "Lineage 4"
+                and self.lineages[identified_lineage_name]["sublineage"] == ""
             ):
 
                 next_lineage_name = self.results[1][0]
@@ -255,17 +260,17 @@ class snpit(object):
                 # if the next best lineage is ALSO lineage 4, but this one has a
                 # sublineage and is above the threshold, report that one instead
                 if (
-                    self.lineages_metadata[next_lineage_name]["lineage"] == "Lineage 4"
-                    and self.lineages_metadata[next_lineage_name]["sublineage"] != ""
+                    self.lineages[next_lineage_name]["lineage"] == "Lineage 4"
+                    and self.lineages[next_lineage_name]["sublineage"] != ""
                     and next_lineage_percentage > self.threshold
                 ):
 
                     identified_lineage_name = next_lineage_name
 
             return (
-                self.lineages_metadata[identified_lineage_name]["species"],
-                self.lineages_metadata[identified_lineage_name]["lineage"],
-                self.lineages_metadata[identified_lineage_name]["sublineage"],
+                self.lineages[identified_lineage_name]["species"],
+                self.lineages[identified_lineage_name]["lineage"],
+                self.lineages[identified_lineage_name]["sublineage"],
                 identified_lineage_percentage,
             )
 
@@ -274,18 +279,12 @@ class snpit(object):
             return (None, None, None, None)
 
 
-def load_lineage_metadata_from_file(filepath: Path) -> dict:
-    """Load lineage metadata from a CVS file and return as a dictionary."""
+def load_lineages_from_csv(filepath: Path) -> List[Lineage]:
+    """Load lineage metadata from a CVS file and return as a list of Lineages."""
     library = csv.DictReader(filepath.open())
-    lineages_metadata = dict()
+    lineages = []
 
-    for record in library:
-        lineage_name = record["id"]
+    for entry in library:
+        lineages.append(Lineage.from_csv_entry(entry))
 
-        lineages_metadata[lineage_name] = {
-            "species": record["species"],
-            "lineage": record["lineage"],
-            "sublineage": record["sublineage"],
-        }
-
-    return lineages_metadata
+    return lineages
