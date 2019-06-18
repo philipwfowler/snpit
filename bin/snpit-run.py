@@ -7,7 +7,7 @@ SNP-IT allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H
 
 from pathlib import Path
 import sys
-from snpit import snpit
+from snpit import SnpIt
 import argparse
 
 THRESHOLD = 10.0
@@ -67,25 +67,39 @@ if __name__ == "__main__":
     options = cli()
 
     # create an instance (this loads all the lineages)
-    tb = snpit(
+    tb = SnpIt(
         threshold=options.threshold,
-        input_file=options.input,
         ignore_filter=not options.filter,
     )
 
-    if tb.percentage is not None:
-        lineage = tb.lineage or "N/A"
-        sublineage = tb.sublineage or "N/A"
-        percentage = round(tb.percentage, 2)
-        output = "{species}\t{lineage}\t{sublineage}\t{percentage}\t{input_file}".format(
-            species=tb.species,
-            lineage=lineage,
-            sublineage=sublineage,
-            percentage=percentage,
-            input_file=options.input,
-        )
+    compressed = True if options.input.endswith("gz") else False
+    suffixes = Path(options.input).suffixes
+
+    if ".vcf" in suffixes:
+        results = tb.classify_vcf(options.input)
+    elif any(ext in suffixes for ext in [".fa", ".fasta"]):
+        results = tb.load_fasta(options.input, compression=compressed)
     else:
-        output = "{0}\t{0}\t{0}\t{0}\t{1}".format("N/A", options.input)
+        raise Exception(
+            "Only VCF and FASTA files are allowed as inputs (may be compressed with gzip,bzip2)"
+        )
+
     print("Species\tLineage\tSublineage\tPercentage\tInput", file=options.output)
+    output = ""
+    for sample_name, classification in results.items():
+        output += f"{classification}\n"
+    # if tb.percentage is not None:
+    #     lineage = tb.lineage or "N/A"
+    #     sublineage = tb.sublineage or "N/A"
+    #     percentage = round(tb.percentage, 2)
+    #     output = "{species}\t{lineage}\t{sublineage}\t{percentage}\t{input_file}".format(
+    #         species=tb.species,
+    #         lineage=lineage,
+    #         sublineage=sublineage,
+    #         percentage=percentage,
+    #         input_file=options.input,
+    #     )
+    # else:
+    #     output = "{0}\t{0}\t{0}\t{0}\t{1}".format("N/A", options.input)
     print(output, file=options.output)
     options.output.close()

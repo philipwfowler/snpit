@@ -12,6 +12,9 @@ class Lineage:
     def __eq__(self, other):
         return self.name == other.name
 
+    def __hash__(self):
+        return hash(self.name)
+
     def add_snps(self, lineage_variants_file: Path):
         """Adds SNP information to lineage from a variant file. The variant file must
         be in the format position\tbase

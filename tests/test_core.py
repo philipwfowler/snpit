@@ -2,7 +2,7 @@ import vcf
 from pathlib import Path
 from snpit.genotype import Genotype
 from snpit.lineage import Lineage
-from snpit.core import load_lineages_from_csv, snpit
+from snpit.core import load_lineages_from_csv, SnpIt
 
 
 def get_record(type):
@@ -26,7 +26,7 @@ def test_getSampleGenotypedVariant_refCallReturnsNone():
     record = get_record("ref")
     genotype = Genotype("0")
 
-    actual = snpit.get_sample_genotyped_variant(genotype, record)
+    actual = SnpIt.get_variant_for_genotype_in_vcf_record(genotype, record)
     expected = None
 
     assert actual == expected
@@ -36,7 +36,7 @@ def test_getSampleGenotypedVariant_altCallReturnsVariant():
     record = get_record("alt")
     genotype = Genotype("1")
 
-    actual = snpit.get_sample_genotyped_variant(genotype, record)
+    actual = SnpIt.get_variant_for_genotype_in_vcf_record(genotype, record)
     expected = "A"
 
     assert actual == expected
@@ -46,7 +46,7 @@ def test_getSampleGenotypedVariant_nullCallReturnsHyphen():
     record = get_record("null")
     genotype = Genotype(".")
 
-    actual = snpit.get_sample_genotyped_variant(genotype, record)
+    actual = SnpIt.get_variant_for_genotype_in_vcf_record(genotype, record)
     expected = "-"
 
     assert actual == expected
@@ -56,7 +56,7 @@ def test_getSampleGenotypedVariant_hetCallReturnsNone():
     record = get_record("het")
     genotype = Genotype("0", "1")
 
-    actual = snpit.get_sample_genotyped_variant(genotype, record)
+    actual = SnpIt.get_variant_for_genotype_in_vcf_record(genotype, record)
     expected = None
 
     assert actual == expected

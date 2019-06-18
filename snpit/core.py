@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List
 
 import vcf
+from collections import Counter, defaultdict
 from Bio import SeqIO
 
 from .genotype import Genotype
@@ -15,7 +16,7 @@ from .lineage import Lineage
 LIBRARY_DIR = Path("lib").absolute()
 
 
-class snpit(object):
+class SnpIt(object):
     """
     The snpit class is designed to take a VCF file and return the most likely lineage
     based on Sam Lipworth's SNP-IT.
@@ -24,11 +25,10 @@ class snpit(object):
     scripts that processes multiple VCF files.
     """
 
-    def __init__(self, input_file: str, threshold: float, ignore_filter=False):
+    def __init__(self, threshold: float, ignore_filter=False):
 
         """
         Args:
-            input_file: FASTA/VCF file to read variants from.
             threshold: The percentage of snps above which a sample is
             considered to belong to a lineage.
             ignore_filter: Whether to ignore the FILTER column in VCF input.
@@ -42,27 +42,8 @@ class snpit(object):
         self.lineages = load_lineages_from_csv(library_csv)
         self.add_snps_to_all_lineages()
 
-        compressed = True if input_file.endswith("gz") else False
-        suffixes = Path(input_file).suffixes
-
-        if ".vcf" in suffixes:
-            self.classify_vcf(input_file)
-        elif any(ext in suffixes for ext in [".fa", ".fasta"]):
-            self.load_fasta(input_file, compression=compressed)
-        else:
-            raise Exception(
-                "Only VCF and FASTA files are allowed as inputs (may be compressed with gzip,bzip2)"
-            )
-
-        # then work out the lineage
-        (
-            self.species,
-            self.lineage,
-            self.sublineage,
-            self.percentage,
-        ) = self.determine_lineage()
-
     def add_snps_to_all_lineages(self):
+        """Add all of the variants that make up a lineage to the Lineage objects."""
         for lineage in self.lineages:
             lineage_variants_file = LIBRARY_DIR / lineage.name
 
@@ -77,48 +58,70 @@ class snpit(object):
 
             lineage.add_snps(lineage_variants_file)
 
-    def classify_vcf(self, vcf_file):
+    def classify_vcf(self, vcf_file: str):
         """Loads the vcf file and then, for each lineage, identify the base at each of
         the identifying positions in the genome.
 
         Args:
-            vcf_file (str): Path to the VCF file to be read
+            vcf_file: Path to the VCF file to be read
         """
-
-        # setup the dictionaries of expected SNPs for each lineage
-        self._reset_lineage_snps()
-
-        # open the VCF file for reading
         vcf_reader = vcf.Reader(open(vcf_file, "r"))
+        sample_lineage_counts = self.count_lineage_classifications_for_samples_in_vcf(
+            vcf_reader
+        )
 
-        # read the VCF file line-by-line
+        results = {}
+        for sample_name, lineage_counts in sample_lineage_counts.items():
+            results[sample_name] = self.determine_lineage(lineage_counts)
+        return results
+
+    def count_lineage_classifications_for_samples_in_vcf(self, vcf_reader: vcf.Reader):
+        """For each sample in the given VCF, count the number of records that match
+        each lineage.
+        """
+        sample_lineage_counts = defaultdict(Counter)
+
         for record in vcf_reader:
-            if self.ignore_filter or record.FILTER:
-                self.lineage_classify_position(record)
+            is_record_valid = self.ignore_filter or record.FILTER
 
-    def lineage_classify_position(self, record):
+            if not is_record_valid:
+                continue
+
+            record_classification = self.classify_record(record)
+
+            # update overall counts with the counts for this record
+            for sample_name, lineage_counts in record_classification.items():
+                sample_lineage_counts[sample_name].update(lineage_counts)
+
+        return sample_lineage_counts
+
+    def classify_record(self, record):
         """Determine what lineage(s) (if any) a VCF record belongs to.
 
         Args:
             record (vcf.model._Record): A VCF record object.
         """
-        for lineage_name in self.lineages:
-            lineage_positions = self.reference_snps[lineage_name].keys()
 
-            if record.POS not in lineage_positions:
+        classifications = defaultdict(Counter)
+        for lineage in self.lineages:
+            if record.POS not in lineage.snps:
                 continue
 
-            for sample in record.samples:
-                genotype = Genotype.from_string(sample["GT"])
-                variant = self.get_sample_genotyped_variant(genotype, record)
+            for call in record.samples:
+                genotype = Genotype.from_string(call["GT"])
+                variant = self.get_variant_for_genotype_in_vcf_record(genotype, record)
+                is_variant_shared_with_lineage = (
+                    variant is not None and variant == lineage.snps[record.POS]
+                )
 
-                if variant is not None:
-                    self.sample_snps[lineage_name][record.POS] = variant
+                if is_variant_shared_with_lineage:
+                    classifications[call.sample].update([lineage.name])
+
+        return classifications
 
     @staticmethod
-    def get_sample_genotyped_variant(genotype, record):
-        """Retrieves the variant to replace the reference base with for a sample based
-        on it's genotype call.
+    def get_variant_for_genotype_in_vcf_record(genotype, record):
+        """Retrieves the variant a genotype maps to for a given record.
 
         Args:
             genotype (Genotype): The genotype call for the sample.
@@ -148,7 +151,7 @@ class snpit(object):
         """
 
         # setup the dictionaries of expected SNPs for each lineage
-        self._reset_lineage_snps()
+        # self._reset_lineage_snps()
         self.sample_snps = {}
 
         # open the fasta file for reading
@@ -172,40 +175,7 @@ class snpit(object):
                         int(pos) - 1
                     ]
 
-    def _reset_lineage_snps(self):
-        """
-        For each lineage creates a dictionary of the positions and expected nucleotides
-        for TB that define that lineage.
-
-        This is required because the VCF files only list changes relative to H37Rv.
-        Hence these dictionaries are then changed when mutations at these positions are
-        encountered.
-        """
-
-        # make the relative path to the H37Rv TB reference GenBank file
-        genbank_path = LIBRARY_DIR / "H37Rv.gbk"
-
-        # read the reference genome using BioPython
-        with genbank_path.open() as genbank_file:
-            reference_genome = SeqIO.read(genbank_file, "genbank")
-
-        self.sample_snps = {}
-
-        #  iterate through the lineages
-        for lineage_name in self.lineages:
-
-            self.sample_snps[lineage_name] = {}
-
-            # iterate over the positions in the reference set of snps for that lineage
-            for pos in self.reference_snps[lineage_name]:
-
-                # CAUTION the GenBank File is 1-based, but the lineage files are 0-based
-                # Remember the nucleotide at the defining position
-                self.sample_snps[lineage_name][int(pos)] = reference_genome.seq[
-                    int(pos) - 1
-                ]
-
-    def determine_lineage(self):
+    def determine_lineage(self, lineage_counts):
         """
         Having read the VCF file, for each lineage, calculate the percentage of SNP
         present in the sample.
@@ -217,32 +187,19 @@ class snpit(object):
 
         self.percentage = {}
 
-        # consider lineage-by-lineage
-        for lineage_name in self.lineages:
-
-            reference_set = []
-
-            shared = 0
-            ref = 0
-
-            for i, j in enumerate(self.reference_snps[lineage_name]):
-
-                if (
-                    self.reference_snps[lineage_name][j]
-                    == self.sample_snps[lineage_name][j]
-                ):
-                    shared += 1
-                ref += 1
+        for lineage in self.lineages:
+            shared_calls = lineage_counts[lineage.name]
+            ref_calls = len(lineage.snps)
 
             # thereby calculate the percentage of SNPs in this sample that match the lineage
-            self.percentage[lineage_name] = (shared / ref) * 100
+            self.percentage[lineage] = (shared_calls / ref_calls) * 100
 
         # create an ordered list of tuples of (lineage,percentage) in descending order
         self.results = sorted(
             self.percentage.items(), key=operator.itemgetter(1), reverse=True
         )
 
-        identified_lineage_name = self.results[0][0]
+        identified_lineage = self.results[0][0]
         identified_lineage_percentage = self.results[0][1]
 
         # if the top lineage is above the specified threshold, return the classification
@@ -250,31 +207,30 @@ class snpit(object):
 
             # look at the next-highest lineage if the top one is Lineage 4 but with no sublineage
             if (
-                self.lineages[identified_lineage_name]["lineage"] == "Lineage 4"
-                and self.lineages[identified_lineage_name]["sublineage"] == ""
+                identified_lineage.lineage == "Lineage 4"
+                and identified_lineage.sublineage == ""
             ):
 
-                next_lineage_name = self.results[1][0]
-                next_lineage_percentage = self.results[1][1]
+                next_best_lineage = self.results[1][0]
+                next_best_lineage_percentage = self.results[1][1]
 
                 # if the next best lineage is ALSO lineage 4, but this one has a
                 # sublineage and is above the threshold, report that one instead
                 if (
-                    self.lineages[next_lineage_name]["lineage"] == "Lineage 4"
-                    and self.lineages[next_lineage_name]["sublineage"] != ""
-                    and next_lineage_percentage > self.threshold
+                    next_best_lineage.lineage == "Lineage 4"
+                    and next_best_lineage.sublineage != ""
+                    and next_best_lineage_percentage > self.threshold
                 ):
 
-                    identified_lineage_name = next_lineage_name
+                    identified_lineage = next_best_lineage
 
             return (
-                self.lineages[identified_lineage_name]["species"],
-                self.lineages[identified_lineage_name]["lineage"],
-                self.lineages[identified_lineage_name]["sublineage"],
+                identified_lineage.species,
+                identified_lineage.lineage,
+                identified_lineage.sublineage,
                 identified_lineage_percentage,
             )
 
-        # finally, no strain must be above the threshold percentage so return Nones as "Don't know"
         else:
             return (None, None, None, None)
 
