@@ -1,13 +1,12 @@
 #! /usr/bin/env python
-import sys
 import csv
 import gzip
-import operator
+import sys
+from collections import Counter, defaultdict
 from pathlib import Path
-from typing import List
+from typing import Tuple
 
 import vcf
-from collections import Counter, defaultdict
 from Bio import SeqIO
 
 from .genotype import Genotype
@@ -44,19 +43,19 @@ class SnpIt(object):
 
     def add_snps_to_all_lineages(self):
         """Add all of the variants that make up a lineage to the Lineage objects."""
-        for lineage in self.lineages:
-            lineage_variants_file = LIBRARY_DIR / lineage.name
+        for lineage_name in self.lineages:
+            lineage_variants_file = LIBRARY_DIR / lineage_name
 
             if not lineage_variants_file.exists():
                 print(
                     "Lineage file {} does not exist for lineage {}".format(
-                        lineage_variants_file, lineage.name
+                        lineage_variants_file, lineage_name
                     ),
                     file=sys.stderr,
                 )
                 continue
 
-            lineage.add_snps(lineage_variants_file)
+            self.lineages[lineage_name].add_snps(lineage_variants_file)
 
     def classify_vcf(self, vcf_file: str):
         """Loads the vcf file and then, for each lineage, identify the base at each of
@@ -93,6 +92,12 @@ class SnpIt(object):
             for sample_name, lineage_counts in record_classification.items():
                 sample_lineage_counts[sample_name].update(lineage_counts)
 
+        # need to do this so that sample appears in the results even if
+        # there are no counts for any lineages
+        if not sample_lineage_counts:
+            for sample_name in vcf_reader.samples:
+                sample_lineage_counts[sample_name].update([])
+
         return sample_lineage_counts
 
     def classify_record(self, record):
@@ -103,7 +108,7 @@ class SnpIt(object):
         """
 
         classifications = defaultdict(Counter)
-        for lineage in self.lineages:
+        for lineage in self.lineages.values():
             if record.POS not in lineage.snps:
                 continue
 
@@ -175,7 +180,8 @@ class SnpIt(object):
                         int(pos) - 1
                     ]
 
-    def determine_lineage(self, lineage_counts: Counter):
+    # todo: clean up this function
+    def determine_lineage(self, lineage_counts: Counter) -> Tuple[float, Lineage]:
         """
         Having read the VCF file, for each lineage, calculate the percentage of SNP
         present in the sample.
@@ -184,23 +190,21 @@ class SnpIt(object):
         Returns:
             tuple of (lineage,percentage)
         """
+        percentage_shared_snps_for_lineages = []
 
-        percentage = {}
-
-        for lineage in self.lineages:
-            shared_calls = lineage_counts[lineage.name]
+        for name, lineage in self.lineages.items():
+            shared_calls = lineage_counts[name]
             ref_calls = len(lineage.snps)
 
             # thereby calculate the percentage of SNPs in this sample that match the lineage
-            percentage[lineage] = (shared_calls / ref_calls) * 100
+            percentage_shared_snps_for_lineages.append(
+                ((shared_calls / ref_calls) * 100, lineage)
+            )
 
-        # create an ordered list of tuples of (lineage,percentage) in descending order
-        results = sorted(
-            percentage.items(), key=operator.itemgetter(1), reverse=True
-        )
+        percentage_shared_snps_for_lineages.sort(reverse=True)
 
-        identified_lineage = results[0][0]
-        identified_lineage_percentage = results[0][1]
+        identified_lineage = percentage_shared_snps_for_lineages[0][1]
+        identified_lineage_percentage = percentage_shared_snps_for_lineages[0][0]
 
         # if the top lineage is above the specified threshold, return the classification
         if identified_lineage_percentage > self.threshold:
@@ -211,8 +215,8 @@ class SnpIt(object):
                 and identified_lineage.sublineage == ""
             ):
 
-                next_best_lineage = results[1][0]
-                next_best_lineage_percentage = results[1][1]
+                next_best_lineage = percentage_shared_snps_for_lineages[1][1]
+                next_best_lineage_percentage = percentage_shared_snps_for_lineages[1][0]
 
                 # if the next best lineage is ALSO lineage 4, but this one has a
                 # sublineage and is above the threshold, report that one instead
@@ -224,23 +228,40 @@ class SnpIt(object):
 
                     identified_lineage = next_best_lineage
 
-            return (
-                identified_lineage.species,
-                identified_lineage.lineage,
-                identified_lineage.sublineage,
-                identified_lineage_percentage,
-            )
-
+            return identified_lineage_percentage, identified_lineage
         else:
-            return (None, None, None, None)
+            return 0, Lineage()
 
 
-def load_lineages_from_csv(filepath: Path) -> List[Lineage]:
+def load_lineages_from_csv(filepath: Path) -> dict:
     """Load lineage metadata from a CVS file and return as a list of Lineages."""
     library = csv.DictReader(filepath.open())
-    lineages = []
+    lineages = dict()
 
     for entry in library:
-        lineages.append(Lineage.from_csv_entry(entry))
+        lineage = Lineage.from_csv_entry(entry)
+        lineages[lineage.name] = lineage
 
     return lineages
+
+
+def output_results(outfile, results):
+    print("Sample\tSpecies\tLineage\tSublineage\tName\tPercentage", file=outfile)
+
+    for sample_name, (percentage, lineage) in results.items():
+        output = format_output_string(sample_name, percentage, lineage)
+        print(output, file=outfile)
+
+
+def format_output_string(sample_name, percentage, lineage):
+    if not percentage:  # either there was no classification or was below threshold
+        return "{1}\t{0}\t{0}\t{0}\t{0}\t{0}".format("N/A", sample_name)
+
+    return "{sample}\t{species}\t{lineage}\t{sublineage}\t{name}\t{percentage}".format(
+        species=lineage.species,
+        lineage=(lineage.lineage or "N/A"),
+        sublineage=(lineage.sublineage or "N/A"),
+        percentage=round(percentage, 2),
+        name=lineage.name,
+        sample=sample_name,
+    )

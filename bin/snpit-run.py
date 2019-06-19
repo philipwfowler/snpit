@@ -5,12 +5,13 @@ complex.
 SNP-IT allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H37Rv).
 """
 
-from pathlib import Path
-import sys
-from snpit import SnpIt
 import argparse
+import sys
+from pathlib import Path
 
-THRESHOLD = 10.0
+from snpit.core import SnpIt, output_results
+
+DEFAULT_THRESHOLD = 10.0
 
 
 def cli():
@@ -34,14 +35,12 @@ def cli():
         type=float,
         help="""The percentage of snps above which a sample is considered to belong to 
         a lineage. [{}]""".format(
-            THRESHOLD
+            DEFAULT_THRESHOLD
         ),
-        default=THRESHOLD,
+        default=DEFAULT_THRESHOLD,
     )
     parser.add_argument(
-        "--filter",
-        help="Whether to adhere to the FILTER column.",
-        action="store_true",
+        "--filter", help="Whether to adhere to the FILTER column.", action="store_true"
     )
     args = parser.parse_args()
 
@@ -67,39 +66,19 @@ if __name__ == "__main__":
     options = cli()
 
     # create an instance (this loads all the lineages)
-    tb = SnpIt(
-        threshold=options.threshold,
-        ignore_filter=not options.filter,
-    )
+    snpit = SnpIt(threshold=options.threshold, ignore_filter=not options.filter)
 
     compressed = True if options.input.endswith("gz") else False
     suffixes = Path(options.input).suffixes
 
     if ".vcf" in suffixes:
-        results = tb.classify_vcf(options.input)
+        results = snpit.classify_vcf(options.input)
     elif any(ext in suffixes for ext in [".fa", ".fasta"]):
-        results = tb.load_fasta(options.input, compression=compressed)
+        results = snpit.load_fasta(options.input, compression=compressed)
     else:
         raise Exception(
             "Only VCF and FASTA files are allowed as inputs (may be compressed with gzip,bzip2)"
         )
 
-    print("Species\tLineage\tSublineage\tPercentage\tInput", file=options.output)
-    output = ""
-    for sample_name, classification in results.items():
-        output += f"{classification}\n"
-    # if tb.percentage is not None:
-    #     lineage = tb.lineage or "N/A"
-    #     sublineage = tb.sublineage or "N/A"
-    #     percentage = round(tb.percentage, 2)
-    #     output = "{species}\t{lineage}\t{sublineage}\t{percentage}\t{input_file}".format(
-    #         species=tb.species,
-    #         lineage=lineage,
-    #         sublineage=sublineage,
-    #         percentage=percentage,
-    #         input_file=options.input,
-    #     )
-    # else:
-    #     output = "{0}\t{0}\t{0}\t{0}\t{1}".format("N/A", options.input)
-    print(output, file=options.output)
+    output_results(options.output, results)
     options.output.close()

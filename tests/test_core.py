@@ -66,7 +66,7 @@ def test_loadLineagesFromCsv_emptyFileReturnsEmptyDict():
     filepath = Path("test_cases/empty.csv")
 
     actual = load_lineages_from_csv(filepath)
-    expected = []
+    expected = dict()
 
     assert actual == expected
 
@@ -75,20 +75,20 @@ def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
     filepath = Path("test_cases/test_library.csv")
 
     actual = load_lineages_from_csv(filepath)
-    expected = [
-        Lineage(
+    expected = {
+        "indo-oceanic": Lineage(
             name="indo-oceanic",
             species="M. tuberculosis",
             lineage="Lineage 1",
             sublineage="Sublineage 7",
         ),
-        Lineage(
+        "beijing": Lineage(
             name="beijing",
             species="M. tuberculosis",
             lineage="Lineage 2",
             sublineage="",
         ),
-    ]
+    }
 
     assert actual == expected
 
@@ -97,6 +97,11 @@ def test_classifyVcf_exampleVcfReturnsCorrectClassification():
     snpit = SnpIt(10, True)
 
     actual = snpit.classify_vcf("../example/example.vcf")
-    expected = {"example": ("M. tuberculosis", "Lineage 2", "", 97.368_421_052_631_58)}
+    expected = {
+        "example": (
+            97.368_421_052_631_58,
+            Lineage(lineage="Lineage 2", species="M. tuberculosis", name="beijing"),
+        )
+    }
 
     assert actual == expected
