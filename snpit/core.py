@@ -241,6 +241,23 @@ def load_lineages_from_csv(filepath: Path) -> dict:
     for entry in library:
         lineage = Lineage.from_csv_entry(entry)
         lineages[lineage.name] = lineage
+        lineage_variants_file = LIBRARY_DIR / lineage.name
+        if not lineage_variants_file.exists():
+            print(
+                "Lineage file {} does not exist for lineage {}".format(
+                    lineage_variants_file, lineage.name
+                ),
+                file=sys.stderr,
+            )
+            continue
+
+        lineage.add_snps(lineage_variants_file)
+
+        for position, variant in lineage.snps.items():
+            if position not in lineages:
+                lineages[position] = {lineage: variant}
+            else:
+                lineages[position][lineage] = variant
 
     return lineages
 

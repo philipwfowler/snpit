@@ -7,7 +7,7 @@ setup(
     packages=['snpit'],
     package_data={'snpit': ['../lib/*']},
     install_requires=[
-        "PyVCF >= 0.6.8",
+        "scikit-allel >= 1.2.0",
         "biopython >= 1.70"
     ],
     scripts=["bin/snpit-run.py"],

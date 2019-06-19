@@ -75,22 +75,24 @@ def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
     filepath = Path("test_cases/test_library.csv")
 
     actual = load_lineages_from_csv(filepath)
-    expected = {
-        "indo-oceanic": Lineage(
+
+    assert len(actual) == 731
+    assert actual[115_499] == {
+        Lineage(
             name="indo-oceanic",
             species="M. tuberculosis",
             lineage="Lineage 1",
             sublineage="Sublineage 7",
-        ),
-        "beijing": Lineage(
+        ): "G"
+    }
+    assert actual[1_288_698] == {
+        Lineage(
             name="beijing",
             species="M. tuberculosis",
             lineage="Lineage 2",
             sublineage="",
-        ),
+        ): "A"
     }
-
-    assert actual == expected
 
 
 def test_classifyVcf_exampleVcfReturnsCorrectClassification():
