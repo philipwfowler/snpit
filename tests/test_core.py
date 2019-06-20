@@ -155,3 +155,42 @@ def test_countLineageClassificationsForSamplesInVcf_ignoreFilterIgnoreStatus():
     expected["Sample2"] = Counter(["L1", "L1", "L1", "L2", "L3", "L3"])
 
     assert actual == expected
+
+def test_countLineageClassificationsForSamplesInVcf_notIgnoreFilterIgnoreStatus():
+    snpit = create_test_snpit()
+    snpit.ignore_filter = False
+    snpit.ignore_status = True
+    vcf_path = Path("test_cases/multisample_test.vcf")
+
+    actual = snpit.count_lineage_classifications_for_samples_in_vcf(vcf_path)
+    expected = defaultdict()
+    expected["Sample1"] = Counter(["L3", "L3"])
+    expected["Sample2"] = Counter(["L1", "L2", "L3"])
+
+    assert actual == expected
+
+def test_countLineageClassificationsForSamplesInVcf_ignoreFilterNotIgnoreStatus():
+    snpit = create_test_snpit()
+    snpit.ignore_filter = True
+    snpit.ignore_status = False
+    vcf_path = Path("test_cases/multisample_test.vcf")
+
+    actual = snpit.count_lineage_classifications_for_samples_in_vcf(vcf_path)
+    expected = defaultdict()
+    expected["Sample1"] = Counter(["L4", "L3", "L3"])
+    expected["Sample2"] = Counter(["L1", "L2", "L3", "L3"])
+
+    assert actual == expected
+
+def test_countLineageClassificationsForSamplesInVcf_notIgnoreFilterNotIgnoreStatus():
+    snpit = create_test_snpit()
+    snpit.ignore_filter = False
+    snpit.ignore_status = False
+    vcf_path = Path("test_cases/multisample_test.vcf")
+
+    actual = snpit.count_lineage_classifications_for_samples_in_vcf(vcf_path)
+    expected = defaultdict()
+    expected["Sample1"] = Counter(["L3", "L3"])
+    expected["Sample2"] = Counter(["L2", "L3"])
+
+    assert actual == expected
