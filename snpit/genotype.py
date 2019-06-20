@@ -8,8 +8,8 @@ class UnexpectedGenotypeError(Exception):
 
 class Genotype:
     def __init__(self, call1: int, call2=None):
-        self.call1 = call1
-        self.call2 = call1 if call2 is None else call2
+        self.call1 = call1 if call1 is not None else -1
+        self.call2 = self.call1 if call2 is None else call2
 
     def __eq__(self, other):
         return sorted(self.call()) == sorted(other.call())

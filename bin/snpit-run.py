@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Whole genome SNP based identification of members of the Mycobacterium tuberculosis
 complex.
 SNP-IT allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H37Rv).

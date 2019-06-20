@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Tuple, List, Iterator
 import numpy as np
-import allel
+import pysam
 from Bio import SeqIO
 
 from .genotype import Genotype, UnexpectedGenotypeError
@@ -81,43 +81,52 @@ class SnpIt(object):
         """For each sample in the given VCF, count the number of records that match
         each lineage.
         """
-        alt_number = get_maximum_number_of_alt_alleles(vcf_path)
-        fields = self.generate_required_vcf_fields()
-        vcf = allel.read_vcf(str(vcf_path), alt_number=alt_number, fields=fields)
-
-        if not self.ignore_status:
-            vcf["calldata/STATUS"] = vcf["calldata/STATUS"] == "PASS"
-
-        valid_idxs = self.get_indicies_of_valid_vcf_records_and_samples(vcf)
+        vcf = pysam.VariantFile(vcf_path)
 
         sample_lineage_counts = defaultdict(Counter)
-        for record_idx, sample_idx in valid_idxs:
-            genotype = Genotype(*vcf["calldata/GT"][record_idx, sample_idx])
-            if genotype.is_reference() or genotype.is_heterozygous():
+
+        for record in vcf:
+            if record.pos not in self.lineage_positions:
                 continue
-            elif genotype.is_alt():
-                alt_call = max(genotype.call())
-                variant = vcf["variants/ALT"][record_idx, alt_call - 1]
-            elif genotype.is_null():
-                variant = "-"
-            else:
-                raise UnexpectedGenotypeError(
-                    f"""Got a genotype for which a Ref/Alt/Null call could not be 
-                    determined: {genotype.call()}.\nPlease raise this with the 
-                    developers."""
+            if not self.ignore_filter and "PASS" not in record.filter.keys():
+                continue
+
+            for sample_idx, (sample_name, sample_info) in enumerate(record.samples.items()):
+                if not self.ignore_status and sample_info["STATUS"] == "FAIL":
+                    continue
+
+                try:
+                    genotype = Genotype(*sample_info["GT"])
+                except TypeError as err:
+                    genotype = minos_gt_in_wrong_position_fix(record, sample_idx)
+                    if genotype is None:
+                        raise err
+
+                if genotype.is_reference() or genotype.is_heterozygous():
+                    continue
+                elif genotype.is_alt():
+                    alt_call = max(genotype.call())
+                    variant = record.alleles[alt_call]
+                elif genotype.is_null():
+                    variant = "-"
+                else:
+                    raise UnexpectedGenotypeError(
+                        f"""Got a genotype for which a Ref/Alt/Null call could not be 
+                            determined: {genotype.call()}.\nPlease raise this with the 
+                            developers."""
+                    )
+
+                lineages_sharing_variant_with_sample = self.lineage_positions.get(
+                    record.pos, {}
+                ).get(variant, [])
+
+                sample_lineage_counts[sample_name].update(
+                    lineages_sharing_variant_with_sample
                 )
-
-            lineages_sharing_variant_with_sample = self.lineage_positions.get(
-                vcf["variants/POS"][record_idx], {}
-            ).get(variant, [])
-
-            sample_lineage_counts[vcf["samples"][sample_idx]].update(
-                lineages_sharing_variant_with_sample
-            )
 
         # need to do this so that sample appears in the results even if
         # there are no counts for any lineages
-        for sample_name in vcf["samples"]:
+        for sample_name in vcf.header.samples:
             if sample_name not in sample_lineage_counts:
                 sample_lineage_counts[sample_name].update([])
 
@@ -352,3 +361,9 @@ def format_output_string(sample_name, percentage, lineage):
 def get_maximum_number_of_alt_alleles(vcf_path: Path) -> int:
     callset = allel.read_vcf(str(vcf_path), fields="variants/numalt")
     return callset["variants/numalt"].max()
+
+def minos_gt_in_wrong_position_fix(record, sample_idx):
+    info = str(record).strip().split("\t")[9 + sample_idx]
+    for field in info.split(":"):
+        if "/" in field:
+            return Genotype.from_string(field)

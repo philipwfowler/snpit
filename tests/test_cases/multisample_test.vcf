@@ -1,6 +1,8 @@
 ##fileformat=VCFv4.2
 ##source=minos, version 0.5.1
 ##fileDate=2019-03-25
+##FILTER=<ID=PASS,Description="Passed filtering">
+##FILTER=<ID=FAIL,Description="Failed filtering">
 ##FORMAT=<ID=COV,Number=R,Type=Integer,Description="Number of reads on ref and alt alleles">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="total kmer depth from gramtools">
