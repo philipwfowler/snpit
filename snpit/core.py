@@ -9,7 +9,7 @@ import numpy as np
 import allel
 from Bio import SeqIO
 
-from .genotype import Genotype
+from .genotype import Genotype, UnexpectedGenotypeError
 from .lineage import Lineage
 
 LIBRARY_DIR = Path(__file__).parent.parent / "lib"
@@ -120,6 +120,12 @@ class SnpIt(object):
                 variant = callset["variants/ALT"][record_idx, alt_call - 1]
             elif genotype.is_null():
                 variant = "-"
+            else:
+                raise UnexpectedGenotypeError(
+                    f"""Got a genotype for which a Ref/Alt/Null call could not be 
+                    determined: {genotype.call()}.\nPlease raise this with the 
+                    developers."""
+                )
 
             lineages_sharing_variant_with_sample = self.lineage_positions.get(
                 callset["variants/POS"][record_idx], {}

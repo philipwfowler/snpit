@@ -2,6 +2,10 @@ class InvalidGenotypeString(Exception):
     pass
 
 
+class UnexpectedGenotypeError(Exception):
+    pass
+
+
 class Genotype:
     def __init__(self, call1: int, call2=None):
         self.call1 = call1
@@ -35,7 +39,8 @@ class Genotype:
         delimiter = "/"
         if s.count(delimiter) != 1:
             raise InvalidGenotypeString(
-                f"Invalid genotype string received: {s}\nGenotype string should be of the form 0/0"
+                f"""Invalid genotype string received: {s}\nGenotype string should be 
+                of the form 0/0"""
             )
 
         calls = s.strip().replace(".", "-1").split("/")

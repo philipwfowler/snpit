@@ -142,6 +142,7 @@ def test_classifyVcf_exampleVcfReturnsCorrectClassification():
 
     assert actual == expected
 
+
 def test_countLineageClassificationsForSamplesInVcf_ignoreFilterIgnoreStatus():
     snpit = create_test_snpit()
     snpit.ignore_filter = True
