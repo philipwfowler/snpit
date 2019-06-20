@@ -4,7 +4,7 @@ import gzip
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List, Iterator
 import numpy as np
 import allel
 from Bio import SeqIO
@@ -80,44 +80,23 @@ class SnpIt(object):
         """For each sample in the given VCF, count the number of records that match
         each lineage.
         """
-        callset = allel.read_vcf(str(vcf_path), fields="variants/numalt")
-        max_num_alts = callset["variants/numalt"].max()
-
-        fields = ["samples"]
-        variant_fields = ["POS", "ALT"]
-        if not self.ignore_filter:
-            variant_fields.append("FILTER_PASS")
-        fields.extend([f"variants/{field}" for field in variant_fields])
-        calldata_fields = ["GT"]
-        if not self.ignore_status:
-            calldata_fields.append("STATUS")
-        fields.extend([f"calldata/{field}" for field in calldata_fields])
-
-        callset = allel.read_vcf(str(vcf_path), alt_number=max_num_alts, fields=fields)
+        alt_number = get_maximum_number_of_alt_alleles(vcf_path)
+        fields = self.generate_required_vcf_fields()
+        vcf = allel.read_vcf(str(vcf_path), alt_number=alt_number, fields=fields)
 
         if not self.ignore_status:
-            callset["calldata/STATUS"] = callset["calldata/STATUS"] == "PASS"
+            vcf["calldata/STATUS"] = vcf["calldata/STATUS"] == "PASS"
 
-        # array that has the indicies of all VCF records that appear in the lineage
-        # positions and position indicies where VCF record is "valid". This would be
-        # relating to whether or not to ignore the filter column. AND where STATUS is
-        # present, and ignored
-        valid_record_idxs = list(
-            (i, j)
-            for i, j in np.ndindex(callset["calldata/GT"].shape[0:2])
-            if callset["variants/POS"][i] in self.lineage_positions
-            and (self.ignore_filter or callset["variants/FILTER_PASS"][i])
-            and (self.ignore_status or callset["calldata/STATUS"][i, j])
-        )
+        valid_idxs = self.get_indicies_of_valid_vcf_records_and_samples(vcf)
 
         sample_lineage_counts = defaultdict(Counter)
-        for record_idx, sample_idx in valid_record_idxs:
-            genotype = Genotype(*callset["calldata/GT"][record_idx, sample_idx])
+        for record_idx, sample_idx in valid_idxs:
+            genotype = Genotype(*vcf["calldata/GT"][record_idx, sample_idx])
             if genotype.is_reference() or genotype.is_heterozygous():
                 continue
             elif genotype.is_alt():
                 alt_call = max(genotype.call())
-                variant = callset["variants/ALT"][record_idx, alt_call - 1]
+                variant = vcf["variants/ALT"][record_idx, alt_call - 1]
             elif genotype.is_null():
                 variant = "-"
             else:
@@ -128,20 +107,59 @@ class SnpIt(object):
                 )
 
             lineages_sharing_variant_with_sample = self.lineage_positions.get(
-                callset["variants/POS"][record_idx], {}
+                vcf["variants/POS"][record_idx], {}
             ).get(variant, [])
 
-            sample_lineage_counts[callset["samples"][sample_idx]].update(
+            sample_lineage_counts[vcf["samples"][sample_idx]].update(
                 lineages_sharing_variant_with_sample
             )
 
         # need to do this so that sample appears in the results even if
         # there are no counts for any lineages
-        for sample_name in callset["samples"]:
+        for sample_name in vcf["samples"]:
             if sample_name not in sample_lineage_counts:
                 sample_lineage_counts[sample_name].update([])
 
         return sample_lineage_counts
+
+    def generate_required_vcf_fields(self) -> List[str]:
+        fields = ["samples"]
+        variant_fields = ["POS", "ALT"]
+
+        if not self.ignore_filter:
+            variant_fields.append("FILTER_PASS")
+        fields.extend([f"variants/{field}" for field in variant_fields])
+
+        calldata_fields = ["GT"]
+
+        if not self.ignore_status:
+            calldata_fields.append("STATUS")
+        fields.extend([f"calldata/{field}" for field in calldata_fields])
+
+        return fields
+
+    def get_indicies_of_valid_vcf_records_and_samples(
+        self, vcf: dict
+    ) -> Iterator[Tuple[int]]:
+        """Returns an iterator where each element is a tuple of indices
+        (record_index, sample_index) that are valid based on the specified filtering
+        criterion and whether the record POS field is in the set of positions we are
+        interested in for the lineages we are checking against.
+
+        Args:
+             vcf: Should be a dictionary return one of the scikit-allel package's vcf
+             reading functions.
+        """
+        for i, j in np.ndindex(vcf["calldata/GT"].shape[0:2]):
+
+            is_record_and_sample_valid = (
+                vcf["variants/POS"][i] in self.lineage_positions
+                and (self.ignore_filter or vcf["variants/FILTER_PASS"][i])
+                and (self.ignore_status or vcf["calldata/STATUS"][i, j])
+            )
+
+            if is_record_and_sample_valid:
+                yield (i, j)
 
     def classify_record(self, record):
         """Determine what lineage(s) (if any) a VCF record belongs to.
@@ -328,3 +346,8 @@ def format_output_string(sample_name, percentage, lineage):
         name=lineage.name,
         sample=sample_name,
     )
+
+
+def get_maximum_number_of_alt_alleles(vcf_path: Path) -> int:
+    callset = allel.read_vcf(str(vcf_path), fields="variants/numalt")
+    return callset["variants/numalt"].max()
