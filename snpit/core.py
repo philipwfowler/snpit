@@ -59,16 +59,15 @@ class SnpIt(object):
 
             self.lineages[lineage_name].add_snps(lineage_variants_file)
 
-    def classify_vcf(self, vcf_file: str):
+    def classify_vcf(self, vcf_path: Path) -> dict:
         """Loads the vcf file and then, for each lineage, identify the base at each of
         the identifying positions in the genome.
 
         Args:
             vcf_file: Path to the VCF file to be read
         """
-        vcf_reader = vcf.Reader(open(vcf_file, "r"))
         sample_lineage_counts = self.count_lineage_classifications_for_samples_in_vcf(
-            vcf_reader
+            vcf_path
         )
 
         results = {}
@@ -76,7 +75,9 @@ class SnpIt(object):
             results[sample_name] = self.determine_lineage(lineage_counts)
         return results
 
-    def count_lineage_classifications_for_samples_in_vcf(self, vcf_path: Path):
+    def count_lineage_classifications_for_samples_in_vcf(
+        self, vcf_path: Path
+    ) -> defaultdict:
         """For each sample in the given VCF, count the number of records that match
         each lineage.
         """

@@ -42,6 +42,13 @@ def cli():
     parser.add_argument(
         "--filter", help="Whether to adhere to the FILTER column.", action="store_true"
     )
+    parser.add_argument(
+        "--status",
+        help="""Whether to adhere to the STATUS column. This is a custom 
+        field that gives more fine-grained control over whether a sample passes a 
+        user-defined filtering criterion, even if the record has PASS in FILTER.""",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     if args.output == "-":
@@ -66,13 +73,17 @@ if __name__ == "__main__":
     options = cli()
 
     # create an instance (this loads all the lineages)
-    snpit = SnpIt(threshold=options.threshold, ignore_filter=not options.filter)
+    snpit = SnpIt(
+        threshold=options.threshold,
+        ignore_filter=not options.filter,
+        ignore_status=not options.status,
+    )
 
     compressed = True if options.input.endswith("gz") else False
     suffixes = Path(options.input).suffixes
 
     if ".vcf" in suffixes:
-        results = snpit.classify_vcf(options.input)
+        results = snpit.classify_vcf(Path(options.input))
     elif any(ext in suffixes for ext in [".fa", ".fasta"]):
         results = snpit.load_fasta(options.input, compression=compressed)
     else:
