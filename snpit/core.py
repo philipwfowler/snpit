@@ -5,8 +5,8 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Tuple
-
-import vcf
+import numpy as np
+import allel
 from Bio import SeqIO
 
 from .genotype import Genotype
@@ -24,22 +24,24 @@ class SnpIt(object):
     scripts that processes multiple VCF files.
     """
 
-    def __init__(self, threshold: float, ignore_filter=False):
+    def __init__(self, threshold: float, ignore_filter=True, ignore_status=True):
 
         """
         Args:
             threshold: The percentage of snps above which a sample is
             considered to belong to a lineage.
             ignore_filter: Whether to ignore the FILTER column in VCF input.
+            ignore_status: Whether to ignore the STATUS field (if present).
         """
         self.threshold = threshold
         self.ignore_filter = ignore_filter
+        self.ignore_status = ignore_status
 
         # library file which contains a list of all the lineages and sub-lineages
         library_csv = LIBRARY_DIR / "library.csv"
 
-        self.lineages = load_lineages_from_csv(library_csv)
-        self.add_snps_to_all_lineages()
+        # self.lineages = load_lineages_from_csv(library_csv)
+        self.lineages, self.lineage_positions = load_lineages_from_csv(library_csv)
 
     def add_snps_to_all_lineages(self):
         """Add all of the variants that make up a lineage to the Lineage objects."""
@@ -74,28 +76,63 @@ class SnpIt(object):
             results[sample_name] = self.determine_lineage(lineage_counts)
         return results
 
-    def count_lineage_classifications_for_samples_in_vcf(self, vcf_reader: vcf.Reader):
+    def count_lineage_classifications_for_samples_in_vcf(self, vcf_path: Path):
         """For each sample in the given VCF, count the number of records that match
         each lineage.
         """
+        callset = allel.read_vcf(str(vcf_path), fields="variants/numalt")
+        max_num_alts = callset["variants/numalt"].max()
+
+        fields = ["samples"]
+        variant_fields = ["POS", "ALT"]
+        if not self.ignore_filter:
+            variant_fields.append("FILTER_PASS")
+        fields.extend([f"variants/{field}" for field in variant_fields])
+        calldata_fields = ["GT"]
+        if not self.ignore_status:
+            calldata_fields.append("STATUS")
+        fields.extend([f"calldata/{field}" for field in calldata_fields])
+
+        callset = allel.read_vcf(str(vcf_path), alt_number=max_num_alts, fields=fields)
+
+        if not self.ignore_status:
+            callset["calldata/STATUS"] = callset["calldata/STATUS"] == "PASS"
+
+        # array that has the indicies of all VCF records that appear in the lineage
+        # positions and position indicies where VCF record is "valid". This would be
+        # relating to whether or not to ignore the filter column. AND where STATUS is
+        # present, and ignored
+        valid_record_idxs = list(
+            (i, j)
+            for i, j in np.ndindex(callset["calldata/GT"].shape[0:2])
+            if callset["variants/POS"][i] in self.lineage_positions
+            and (self.ignore_filter or callset["variants/FILTER_PASS"][i])
+            and (self.ignore_status or callset["calldata/STATUS"][i, j])
+        )
+
         sample_lineage_counts = defaultdict(Counter)
-
-        for record in vcf_reader:
-            is_record_valid = self.ignore_filter or record.FILTER
-
-            if not is_record_valid:
+        for record_idx, sample_idx in valid_record_idxs:
+            genotype = Genotype(*callset["calldata/GT"][record_idx, sample_idx])
+            if genotype.is_reference() or genotype.is_heterozygous():
                 continue
+            elif genotype.is_alt():
+                alt_call = max(genotype.call())
+                variant = callset["variants/ALT"][record_idx, alt_call - 1]
+            elif genotype.is_null():
+                variant = "-"
 
-            record_classification = self.classify_record(record)
+            lineages_sharing_variant_with_sample = self.lineage_positions.get(
+                callset["variants/POS"][record_idx], {}
+            ).get(variant, [])
 
-            # update overall counts with the counts for this record
-            for sample_name, lineage_counts in record_classification.items():
-                sample_lineage_counts[sample_name].update(lineage_counts)
+            sample_lineage_counts[callset["samples"][sample_idx]].update(
+                lineages_sharing_variant_with_sample
+            )
 
         # need to do this so that sample appears in the results even if
         # there are no counts for any lineages
-        if not sample_lineage_counts:
-            for sample_name in vcf_reader.samples:
+        for sample_name in callset["samples"]:
+            if sample_name not in sample_lineage_counts:
                 sample_lineage_counts[sample_name].update([])
 
         return sample_lineage_counts
@@ -233,10 +270,11 @@ class SnpIt(object):
             return 0, Lineage()
 
 
-def load_lineages_from_csv(filepath: Path) -> dict:
+def load_lineages_from_csv(filepath: Path) -> Tuple[dict, dict]:
     """Load lineage metadata from a CVS file and return as a list of Lineages."""
     library = csv.DictReader(filepath.open())
     lineages = dict()
+    position_map = dict()
 
     for entry in library:
         lineage = Lineage.from_csv_entry(entry)
@@ -254,12 +292,14 @@ def load_lineages_from_csv(filepath: Path) -> dict:
         lineage.add_snps(lineage_variants_file)
 
         for position, variant in lineage.snps.items():
-            if position not in lineages:
-                lineages[position] = {lineage: variant}
+            if position not in position_map:
+                position_map[position] = {variant: [lineage.name]}
+            elif variant in position_map[position]:
+                position_map[position][variant].append(lineage.name)
             else:
-                lineages[position][lineage] = variant
+                position_map[position][variant] = [lineage.name]
 
-    return lineages
+    return lineages, position_map
 
 
 def output_results(outfile, results):
