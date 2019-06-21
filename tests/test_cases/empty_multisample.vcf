@@ -1,0 +1,15 @@
+##fileformat=VCFv4.2
+##source=minos, version 0.5.1
+##fileDate=2019-03-25
+##FILTER=<ID=PASS,Description="Passed filtering">
+##FILTER=<ID=FAIL,Description="Failed filtering">
+##FORMAT=<ID=COV,Number=R,Type=Integer,Description="Number of reads on ref and alt alleles">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="total kmer depth from gramtools">
+##FORMAT=<ID=GT_CONF,Number=1,Type=Float,Description="Genotype confidence. Difference in log likelihood of most likely and next most likely genotype">
+##FORMAT=<ID=GT_CONF_PERCENTILE,Number=1,Type=Float,Description="Percentile of GT_CONF">
+##FORMAT=<ID=STATUS,Number=1,Type=String,Description="IF STATUS=PASS: GT_CONF_PERCENTILE > 2.5 and DP > 2">
+##INFO=<ID=KMER,Number=1,Type=Integer,Description="Kmer size at which variant was discovered (kmer-size used by gramtools build)">
+##minos_max_read_length=150
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Sample1	Sample2
+NC_000962.3	1	.	A	G	.	.	KMER=7	GT:DP:COV:GT_CONF:GT_CONF_PERCENTILE:STATUS	0/0:15:15,0:235.54:3.14:PASS	0/0:17:17,0:230.28:2.41:FAIL
