@@ -3,7 +3,8 @@ from pathlib import Path
 from collections import Counter, defaultdict
 from snpit.genotype import Genotype
 from snpit.lineage import Lineage
-from snpit.core import load_lineages_from_csv, SnpIt
+from io import StringIO
+from snpit.core import load_lineages_from_csv, SnpIt, output_results
 
 
 def get_record(record_type):
@@ -316,6 +317,51 @@ def test_determineLineage_L4NoSublineageMostCountsNextBestL4WithSublineageReturn
     assert actual_percentage == expected_percentage
     assert actual_lineage == actual_lineage
 
-#todo tests for output
 
-#todo tests for fasta
+def test_outputResults_emptyResultswritesJustTheHeader():
+    outfile = StringIO()
+    results = dict()
+    output_results(outfile, results)
+    outfile.seek(0)
+
+    actual = outfile.read()
+    expected = "Sample\tSpecies\tLineage\tSublineage\tName\tPercentage\n"
+
+    assert actual == expected
+
+
+def test_outputResults_emptySampleResultsWritesSampleWithNAs():
+    outfile = StringIO()
+    results = dict(Sample1=(0, Lineage()))
+    output_results(outfile, results)
+    outfile.seek(0)
+
+    actual = outfile.read()
+    expected = (
+        "Sample\tSpecies\tLineage\tSublineage\tName\tPercentage\n"
+        "Sample1\tN/A\tN/A\tN/A\tN/A\t0\n"
+    )
+
+    assert actual == expected
+
+
+def test_outputResults_twoSamplesResultsWritesTwoSamples():
+    outfile = StringIO()
+    results = {
+        "Sample1": (25.25, Lineage(name="L1", sublineage="SL1")),
+        "Sample2": (75.76, Lineage(name="L2", species="S2", lineage="Lin2")),
+    }
+    output_results(outfile, results)
+    outfile.seek(0)
+
+    actual = outfile.read()
+    expected = (
+        "Sample\tSpecies\tLineage\tSublineage\tName\tPercentage\n"
+        "Sample1\tN/A\tN/A\tSL1\tL1\t25.25\n"
+        "Sample2\tS2\tLin2\tN/A\tL2\t75.76\n"
+    )
+
+    assert actual == expected
+
+
+# todo tests for fasta

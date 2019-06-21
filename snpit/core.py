@@ -3,7 +3,7 @@ import gzip
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Tuple, List
+from typing import Tuple, List, Dict, IO
 
 import pysam
 from Bio import SeqIO
@@ -42,7 +42,7 @@ class SnpIt(object):
         # self.lineages = load_lineages_from_csv(library_csv)
         self.lineages, self.lineage_positions = load_lineages_from_csv(library_csv)
 
-    def classify_vcf(self, vcf_path: Path) -> dict:
+    def classify_vcf(self, vcf_path: Path) -> Dict[str, Tuple[float, Lineage]]:
         """Loads the vcf file and then, for each lineage, identify the base at each of
         the identifying positions in the genome.
         """
@@ -271,7 +271,7 @@ def load_lineages_from_csv(filepath: Path) -> Tuple[dict, dict]:
     return lineages, position_map
 
 
-def output_results(outfile, results):
+def output_results(outfile: IO[str], results: Dict[str, Tuple[float, Lineage]]):
     print("Sample\tSpecies\tLineage\tSublineage\tName\tPercentage", file=outfile)
 
     for sample_name, (percentage, lineage) in results.items():
@@ -281,15 +281,15 @@ def output_results(outfile, results):
 
 def format_output_string(sample_name, percentage, lineage):
     if not percentage:  # either there was no classification or was below threshold
-        return "{1}\t{0}\t{0}\t{0}\t{0}\t{0}".format("N/A", sample_name)
+        return "{1}\t{0}\t{0}\t{0}\t{0}\t0".format("N/A", sample_name)
 
-    return "{sample}\t{species}\t{lineage}\t{sublineage}\t{name}\t{percentage}".format(
-        species=lineage.species,
-        lineage=(lineage.lineage or "N/A"),
-        sublineage=(lineage.sublineage or "N/A"),
-        percentage=round(percentage, 2),
-        name=lineage.name,
-        sample=sample_name,
+    species = lineage.species or "N/A"
+    lineage_name = lineage.lineage or "N/A"
+    sublineage = lineage.sublineage or "N/A"
+    name = lineage.name or "N/A"
+
+    return (
+        f"{sample_name}\t{species}\t{lineage_name}\t{sublineage}\t{name}\t{percentage}"
     )
 
 

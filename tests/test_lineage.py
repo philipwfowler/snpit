@@ -31,6 +31,48 @@ def test_inequalityOperator_twoNonEqualReturnsTrue():
     assert lineage1 != lineage2
 
 
+def test_lessThanOperator_xLessThanYReturnsTrue():
+    x = Lineage(name="bar")
+    y = Lineage(name="foo")
+
+    assert x < y
+
+
+def test_lessThanOperator_xGreaterThanYReturnsFalse():
+    x = Lineage(name="foo")
+    y = Lineage(name="bar")
+
+    assert not (x < y)
+
+
+def test_lessThanOperator_xEqualsYReturnsFalse():
+    x = Lineage(name="bar")
+    y = Lineage(name="bar")
+
+    assert not (x < y)
+
+
+def test_greaterThanOperator_xLessThanYReturnsFalse():
+    x = Lineage(name="bar")
+    y = Lineage(name="foo")
+
+    assert not (x > y)
+
+
+def test_greaterThanOperator_xGreaterThanYReturnsTrue():
+    x = Lineage(name="foo")
+    y = Lineage(name="bar")
+
+    assert x > y
+
+
+def test_greaterThanOperator_xEqualsYReturnsFalse():
+    x = Lineage(name="bar")
+    y = Lineage(name="bar")
+
+    assert not (x > y)
+
+
 def test_addSnps_emptyFileSnpsRemainEmpty():
     lineage_variant_file = Path("test_cases/empty.tsv")
     lineage = Lineage()
