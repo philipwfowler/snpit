@@ -1,10 +1,8 @@
 *~
-*.pyc
 *DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
 *$py.class
 
 # C extensions
@@ -19,7 +17,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+#lib/
 lib64/
 parts/
 sdist/
@@ -104,4 +102,5 @@ ENV/
 # mypy
 .mypy_cache/
 
-*~
+.idea
+example
