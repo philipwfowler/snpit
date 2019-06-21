@@ -91,7 +91,9 @@ class SnpIt(object):
             if not self.ignore_filter and "PASS" not in record.filter.keys():
                 continue
 
-            for sample_idx, (sample_name, sample_info) in enumerate(record.samples.items()):
+            for sample_idx, (sample_name, sample_info) in enumerate(
+                record.samples.items()
+            ):
                 if not self.ignore_status and sample_info["STATUS"] == "FAIL":
                     continue
 
@@ -131,45 +133,6 @@ class SnpIt(object):
                 sample_lineage_counts[sample_name].update([])
 
         return sample_lineage_counts
-
-    def generate_required_vcf_fields(self) -> List[str]:
-        fields = ["samples"]
-        variant_fields = ["POS", "ALT"]
-
-        if not self.ignore_filter:
-            variant_fields.append("FILTER_PASS")
-        fields.extend([f"variants/{field}" for field in variant_fields])
-
-        calldata_fields = ["GT"]
-
-        if not self.ignore_status:
-            calldata_fields.append("STATUS")
-        fields.extend([f"calldata/{field}" for field in calldata_fields])
-
-        return fields
-
-    def get_indicies_of_valid_vcf_records_and_samples(
-        self, vcf: dict
-    ) -> Iterator[Tuple[int]]:
-        """Returns an iterator where each element is a tuple of indices
-        (record_index, sample_index) that are valid based on the specified filtering
-        criterion and whether the record POS field is in the set of positions we are
-        interested in for the lineages we are checking against.
-
-        Args:
-             vcf: Should be a dictionary return one of the scikit-allel package's vcf
-             reading functions.
-        """
-        for i, j in np.ndindex(vcf["calldata/GT"].shape[0:2]):
-
-            is_record_and_sample_valid = (
-                vcf["variants/POS"][i] in self.lineage_positions
-                and (self.ignore_filter or vcf["variants/FILTER_PASS"][i])
-                and (self.ignore_status or vcf["calldata/STATUS"][i, j])
-            )
-
-            if is_record_and_sample_valid:
-                yield (i, j)
 
     def classify_record(self, record):
         """Determine what lineage(s) (if any) a VCF record belongs to.
@@ -358,11 +321,8 @@ def format_output_string(sample_name, percentage, lineage):
     )
 
 
-def get_maximum_number_of_alt_alleles(vcf_path: Path) -> int:
-    callset = allel.read_vcf(str(vcf_path), fields="variants/numalt")
-    return callset["variants/numalt"].max()
-
 def minos_gt_in_wrong_position_fix(record, sample_idx):
+    """A version of minos had GT in the second column instead of the first"""
     info = str(record).strip().split("\t")[9 + sample_idx]
     for field in info.split(":"):
         if "/" in field:
