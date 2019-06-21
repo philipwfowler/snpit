@@ -1,12 +1,10 @@
 import csv
-import gzip
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Tuple, List, Dict, IO
 
 import pysam
-from Bio import SeqIO
 
 from .genotype import Genotype, UnexpectedGenotypeError
 from .lineage import Lineage
@@ -136,40 +134,37 @@ class SnpIt(object):
             )
         return variant
 
-    def load_fasta(self, fasta_file, compression=False):
+    def classify_fasta(self, fasta_path: Path) -> Dict[str, Tuple[float, Lineage]]:
+        fasta = pysam.FastaFile(fasta_path)
+        sample_lineage_counts = dict()
+
+        for sample_name in fasta.references:
+            sequence = fasta.fetch(sample_name)
+            sample_lineage_counts[sample_name] = self.classify_fasta_sequence(sequence)
+
+        results = {}
+        for sample_name, lineage_counts in sample_lineage_counts.items():
+            results[sample_name] = self.determine_lineage(lineage_counts)
+        return results
+
+    def classify_fasta_sequence(self, sequence: str) -> Counter:
+        """For each lineage, identify the base at each of the identifying positions
         """
-        Loads a supplied fasta file and then, for each lineage, identify the base at
-        each of the identifying positions
+        counts = Counter()
+        seq_len = len(sequence)
 
-        Args:
-         fasta_file (str): Path to the fasta file to be read
-         compression (bool): whether the fasta file is compressed by gz or bzip2
-        """
+        for pos in self.lineage_positions:
+            if pos >= seq_len:
+                continue
 
-        # setup the dictionaries of expected SNPs for each lineage
-        # self._reset_lineage_snps()
-        self.sample_snps = {}
+            base_in_sequence = sequence[pos - 1]  # all lineages positions are 1-based
+            base_in_known_variants = base_in_sequence in self.lineage_positions[pos]
+            if not base_in_known_variants:
+                continue
 
-        # open the fasta file for reading
-        open_fn = gzip.open if compression else open
+            counts.update(self.lineage_positions[pos][base_in_sequence])
 
-        with open_fn(fasta_file, "rt") as fasta_file:
-            fasta_reader = SeqIO.read(fasta_file, "fasta")
-
-        #  iterate through the lineages
-        for lineage_name in self.lineages:
-
-            self.sample_snps[lineage_name] = {}
-
-            # iterate over the positions in the reference set of snps for that lineage
-            for pos in self.reference_snps[lineage_name]:
-                if pos in self.reference_snps[lineage_name].keys():
-
-                    # CAUTION the GenBank File is 1-based, but the lineage files are 0-based
-                    # Remember the nucleotide at the defining position
-                    self.sample_snps[lineage_name][int(pos)] = fasta_reader.seq[
-                        int(pos) - 1
-                    ]
+        return counts
 
     def determine_lineage(self, lineage_counts: Counter) -> Tuple[float, Lineage]:
         """
@@ -275,11 +270,11 @@ def output_results(outfile: IO[str], results: Dict[str, Tuple[float, Lineage]]):
     print("Sample\tSpecies\tLineage\tSublineage\tName\tPercentage", file=outfile)
 
     for sample_name, (percentage, lineage) in results.items():
-        output = format_output_string(sample_name, percentage, lineage)
+        output = format_output_string(sample_name, round(percentage, 2), lineage)
         print(output, file=outfile)
 
 
-def format_output_string(sample_name, percentage, lineage):
+def format_output_string(sample_name: str, percentage: float, lineage: Lineage) -> str:
     if not percentage:  # either there was no classification or was below threshold
         return "{1}\t{0}\t{0}\t{0}\t{0}\t0".format("N/A", sample_name)
 

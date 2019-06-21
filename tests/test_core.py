@@ -1,10 +1,13 @@
-import pysam
-from pathlib import Path
 from collections import Counter, defaultdict
+from io import StringIO
+from pathlib import Path
+
+import pysam
+import pytest
+
+from snpit.core import load_lineages_from_csv, SnpIt, output_results
 from snpit.genotype import Genotype
 from snpit.lineage import Lineage
-from io import StringIO
-from snpit.core import load_lineages_from_csv, SnpIt, output_results
 
 
 def get_record(record_type):
@@ -131,8 +134,9 @@ def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
 
 def test_classifyVcf_exampleVcfReturnsCorrectClassification():
     snpit = SnpIt(10, True)
+    vcf_path = Path("../example/example.vcf")
 
-    actual = snpit.classify_vcf("../example/example.vcf")
+    actual = snpit.classify_vcf(vcf_path)
     expected = {
         "example": (
             97.368_421_052_631_58,
@@ -265,24 +269,6 @@ def test_determineLineage_L4NoSublineageMostCountsReturnsL4():
     dummy_snps = {x: "A" for x in range(10)}
     snpit.lineages["L4"].snps = dummy_snps
     snpit.lineages["L1"].snps = dummy_snps
-
-    actual_percentage, actual_lineage = snpit.determine_lineage(
-        Counter(["L4", "L1", "L4"])
-    )
-    expected_percentage, expected_lineage = (
-        20.0,
-        Lineage(name="L4", species="S3", lineage="Lineage 4"),
-    )
-
-    assert actual_percentage == expected_percentage
-    assert actual_lineage == actual_lineage
-
-
-def test_determineLineage_L4NoSublineageMostCountsReturnsL4():
-    snpit = create_test_snpit()
-    dummy_snps = {x: "A" for x in range(10)}
-    snpit.lineages["L4"].snps = dummy_snps
-    snpit.lineages["L1"].snps = dummy_snps
     snpit.lineages["L4"].sublineage = ""
 
     actual_percentage, actual_lineage = snpit.determine_lineage(
@@ -348,8 +334,8 @@ def test_outputResults_emptySampleResultsWritesSampleWithNAs():
 def test_outputResults_twoSamplesResultsWritesTwoSamples():
     outfile = StringIO()
     results = {
-        "Sample1": (25.25, Lineage(name="L1", sublineage="SL1")),
-        "Sample2": (75.76, Lineage(name="L2", species="S2", lineage="Lin2")),
+        "Sample1": (25.253_333_3, Lineage(name="L1", sublineage="SL1")),
+        "Sample2": (75.75899, Lineage(name="L2", species="S2", lineage="Lin2")),
     }
     output_results(outfile, results)
     outfile.seek(0)
@@ -364,4 +350,39 @@ def test_outputResults_twoSamplesResultsWritesTwoSamples():
     assert actual == expected
 
 
-# todo tests for fasta
+def test_classifyFasta_emptyFastaRaisesOSError():
+    empty_fasta = Path("test_cases/empty.fa")
+    snpit = create_test_snpit()
+
+    with pytest.raises(OSError):
+        snpit.classify_fasta(empty_fasta)
+
+
+def test_classifyFasta_singleSampleFastaReturnSingleSample():
+    fasta_path = Path("test_cases/single_sample.fa")
+    snpit = create_test_snpit()
+    snpit.lineages["L1"].snps = {x: "A" for x in range(10)}
+    snpit.lineages["L3"].snps = {x: "A" for x in range(20)}
+    snpit.lineages["L4"].snps = {x: "A" for x in range(2)}
+
+    actual = snpit.classify_fasta(fasta_path)
+    expected = {"Sample1": (50.0, Lineage(name="L4"))}
+
+    assert actual == expected
+
+
+def test_classifyFasta_multiSampleFastaReturnMultiSample():
+    fasta_path = Path("test_cases/multi_sample.fa")
+    snpit = create_test_snpit()
+    snpit.lineages["L1"].snps = {x: "A" for x in range(10)}
+    snpit.lineages["L2"].snps = {x: "A" for x in range(20)}
+    snpit.lineages["L3"].snps = {x: "A" for x in range(20)}
+    snpit.lineages["L4"].snps = {x: "A" for x in range(2)}
+
+    actual = snpit.classify_fasta(fasta_path)
+    expected = {
+        "Sample1": (50.0, Lineage(name="L4")),
+        "Sample2": (20.0, Lineage(name="L1")),
+    }
+
+    assert actual == expected

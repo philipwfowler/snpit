@@ -1,4 +1,5 @@
 import pytest
+
 from snpit.genotype import Genotype, InvalidGenotypeString
 
 
