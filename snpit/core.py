@@ -86,9 +86,7 @@ class SnpIt(object):
         sample_lineage_counts = defaultdict(Counter)
 
         for record in vcf:
-            if record.pos not in self.lineage_positions:
-                continue
-            if not self.ignore_filter and "PASS" not in record.filter.keys():
+            if self.is_record_invalid(record):
                 continue
 
             for sample_idx, (sample_name, sample_info) in enumerate(
@@ -104,19 +102,10 @@ class SnpIt(object):
                     if genotype is None:
                         raise err
 
-                if genotype.is_reference() or genotype.is_heterozygous():
+                variant = self.get_variant_for_genotype_in_vcf_record(genotype, record)
+
+                if not variant:
                     continue
-                elif genotype.is_alt():
-                    alt_call = max(genotype.call())
-                    variant = record.alleles[alt_call]
-                elif genotype.is_null():
-                    variant = "-"
-                else:
-                    raise UnexpectedGenotypeError(
-                        f"""Got a genotype for which a Ref/Alt/Null call could not be 
-                            determined: {genotype.call()}.\nPlease raise this with the 
-                            developers."""
-                    )
 
                 lineages_sharing_variant_with_sample = self.lineage_positions.get(
                     record.pos, {}
@@ -134,50 +123,38 @@ class SnpIt(object):
 
         return sample_lineage_counts
 
-    def classify_record(self, record):
-        """Determine what lineage(s) (if any) a VCF record belongs to.
-
-        Args:
-            record (vcf.model._Record): A VCF record object.
-        """
-
-        classifications = defaultdict(Counter)
-        for lineage in self.lineages.values():
-            if record.POS not in lineage.snps:
-                continue
-
-            for call in record.samples:
-                genotype = Genotype.from_string(call["GT"])
-                variant = self.get_variant_for_genotype_in_vcf_record(genotype, record)
-                is_variant_shared_with_lineage = (
-                    variant is not None and variant == lineage.snps[record.POS]
-                )
-
-                if is_variant_shared_with_lineage:
-                    classifications[call.sample].update([lineage.name])
-
-        return classifications
+    def is_record_invalid(self, record: pysam.VariantRecord) -> bool:
+        return record.pos not in self.lineage_positions or (
+            not self.ignore_filter and "PASS" not in record.filter.keys()
+        )
 
     @staticmethod
-    def get_variant_for_genotype_in_vcf_record(genotype, record):
+    def get_variant_for_genotype_in_vcf_record(
+        genotype: Genotype, record: pysam.VariantRecord
+    ) -> str:
         """Retrieves the variant a genotype maps to for a given record.
 
         Args:
-            genotype (Genotype): The genotype call for the sample.
-            record (vcf.model._Record): A VCF record object.
+            genotype: The genotype call for the sample.
+            record: A VCF record object.
         Returns:
-            str or None: A hyphen if the call is null (ie ./.) or the alt variant if
-            the call is alt. Returns None is the call is ref or heterozygous.
+            str: A hyphen if the call is null (ie ./.) or the alt variant if
+            the call is alt. Returns an empty string if the call is ref or heterozygous.
         """
         if genotype.is_reference() or genotype.is_heterozygous():
-            return None
-        elif genotype.is_null():
-            # record a hyphen which won't match, regardless of the reference
-            return "-"
+            variant = ""
         elif genotype.is_alt():
-            # replace the H37Rv base with the actual base from the VCF file
-            alt_variant = record.ALT[int(genotype.call()[0]) - 1]
-            return alt_variant
+            alt_call = max(genotype.call())
+            variant = record.alleles[alt_call]
+        elif genotype.is_null():
+            variant = "-"
+        else:
+            raise UnexpectedGenotypeError(
+                f"""Got a genotype for which a Ref/Alt/Null call could not be 
+                    determined: {genotype.call()}.\nPlease raise this with the 
+                    developers."""
+            )
+        return variant
 
     def load_fasta(self, fasta_file, compression=False):
         """

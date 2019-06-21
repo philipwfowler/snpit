@@ -1,4 +1,4 @@
-import vcf
+import pysam
 from pathlib import Path
 from collections import Counter, defaultdict
 from snpit.genotype import Genotype
@@ -7,8 +7,9 @@ from snpit.core import load_lineages_from_csv, SnpIt
 
 
 def get_record(record_type):
-    v = vcf.Reader(open("test_cases/test.vcf"))
-    records = [record for record in v]
+    test_vcf = Path("test_cases/test.vcf")
+    vcf = pysam.VariantFile(test_vcf)
+    records = [record for record in vcf]
 
     if record_type == "ref":
         idx = 1
@@ -56,19 +57,19 @@ def create_test_snpit():
     return snpit
 
 
-def test_getSampleGenotypedVariant_refCallReturnsNone():
+def test_getSampleGenotypedVariant_refCallReturnsEmpty():
     record = get_record("ref")
-    genotype = Genotype("0")
+    genotype = Genotype(0)
 
     actual = SnpIt.get_variant_for_genotype_in_vcf_record(genotype, record)
-    expected = None
+    expected = ""
 
     assert actual == expected
 
 
 def test_getSampleGenotypedVariant_altCallReturnsVariant():
     record = get_record("alt")
-    genotype = Genotype("1")
+    genotype = Genotype(1)
 
     actual = SnpIt.get_variant_for_genotype_in_vcf_record(genotype, record)
     expected = "A"
@@ -78,7 +79,7 @@ def test_getSampleGenotypedVariant_altCallReturnsVariant():
 
 def test_getSampleGenotypedVariant_nullCallReturnsHyphen():
     record = get_record("null")
-    genotype = Genotype(".")
+    genotype = Genotype(None)
 
     actual = SnpIt.get_variant_for_genotype_in_vcf_record(genotype, record)
     expected = "-"
@@ -88,10 +89,10 @@ def test_getSampleGenotypedVariant_nullCallReturnsHyphen():
 
 def test_getSampleGenotypedVariant_hetCallReturnsNone():
     record = get_record("het")
-    genotype = Genotype("0", "1")
+    genotype = Genotype(0, 1)
 
     actual = SnpIt.get_variant_for_genotype_in_vcf_record(genotype, record)
-    expected = None
+    expected = ""
 
     assert actual == expected
 
@@ -100,33 +101,31 @@ def test_loadLineagesFromCsv_emptyFileReturnsEmptyDict():
     filepath = Path("test_cases/empty.csv")
 
     actual = load_lineages_from_csv(filepath)
-    expected = dict()
+    expected = (dict(), dict())
 
     assert actual == expected
 
 
 def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
     filepath = Path("test_cases/test_library.csv")
+    beijing_lineage = Lineage(
+        name="beijing", species="M. tuberculosis", lineage="Lineage 2", sublineage=""
+    )
+    indo_lineage = Lineage(
+        name="indo-oceanic",
+        species="M. tuberculosis",
+        lineage="Lineage 1",
+        sublineage="Sublineage 7",
+    )
 
-    actual = load_lineages_from_csv(filepath)
+    actual_lineages, actual_position_map = load_lineages_from_csv(filepath)
 
-    assert len(actual) == 731
-    assert actual[115_499] == {
-        Lineage(
-            name="indo-oceanic",
-            species="M. tuberculosis",
-            lineage="Lineage 1",
-            sublineage="Sublineage 7",
-        ): "G"
-    }
-    assert actual[1_288_698] == {
-        Lineage(
-            name="beijing",
-            species="M. tuberculosis",
-            lineage="Lineage 2",
-            sublineage="",
-        ): "A"
-    }
+    assert len(actual_position_map) == 729
+    assert actual_position_map[115_499] == {"G": [indo_lineage.name]}
+    assert actual_position_map[1_288_698] == {"A": [beijing_lineage.name]}
+
+    assert actual_lineages["beijing"] == beijing_lineage
+    assert actual_lineages["indo-oceanic"] == indo_lineage
 
 
 def test_classifyVcf_exampleVcfReturnsCorrectClassification():
@@ -156,6 +155,7 @@ def test_countLineageClassificationsForSamplesInVcf_ignoreFilterIgnoreStatus():
 
     assert actual == expected
 
+
 def test_countLineageClassificationsForSamplesInVcf_notIgnoreFilterIgnoreStatus():
     snpit = create_test_snpit()
     snpit.ignore_filter = False
@@ -169,6 +169,7 @@ def test_countLineageClassificationsForSamplesInVcf_notIgnoreFilterIgnoreStatus(
 
     assert actual == expected
 
+
 def test_countLineageClassificationsForSamplesInVcf_ignoreFilterNotIgnoreStatus():
     snpit = create_test_snpit()
     snpit.ignore_filter = True
@@ -181,6 +182,7 @@ def test_countLineageClassificationsForSamplesInVcf_ignoreFilterNotIgnoreStatus(
     expected["Sample2"] = Counter(["L1", "L2", "L3", "L3"])
 
     assert actual == expected
+
 
 def test_countLineageClassificationsForSamplesInVcf_notIgnoreFilterNotIgnoreStatus():
     snpit = create_test_snpit()

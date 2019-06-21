@@ -1,3 +1,6 @@
+from typing import Optional, List
+
+
 class InvalidGenotypeString(Exception):
     pass
 
@@ -7,26 +10,26 @@ class UnexpectedGenotypeError(Exception):
 
 
 class Genotype:
-    def __init__(self, call1: int, call2=None):
+    def __init__(self, call1: Optional[int], call2: Optional[int] = None):
         self.call1 = call1 if call1 is not None else -1
         self.call2 = self.call1 if call2 is None else call2
 
     def __eq__(self, other):
         return sorted(self.call()) == sorted(other.call())
 
-    def call(self):
+    def call(self) -> List[int]:
         return [self.call1, self.call2]
 
-    def is_null(self):
+    def is_null(self) -> bool:
         return set(self.call()) == {-1}
 
-    def is_heterozygous(self):
+    def is_heterozygous(self) -> bool:
         return self.call1 != self.call2
 
-    def is_reference(self):
+    def is_reference(self) -> bool:
         return self.call1 == 0 and (self.call1 == self.call2 or self.call2 == -1)
 
-    def is_alt(self):
+    def is_alt(self) -> bool:
         return (
             not self.is_heterozygous()
             and not self.is_reference()
@@ -34,7 +37,7 @@ class Genotype:
         )
 
     @staticmethod
-    def from_string(s):
+    def from_string(s: str) -> "Genotype":
         """Parse a VCF string into a genotype. Expected format is '0/0'"""
         delimiter = "/"
         if s.count(delimiter) != 1:
