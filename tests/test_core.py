@@ -5,13 +5,14 @@ from pathlib import Path
 import pysam
 import pytest
 
-from snpit.core import load_lineages_from_csv, SnpIt, output_results
+from snpit.snpit import load_lineages_from_csv, SnpIt, output_results
 from snpit.genotype import Genotype
 from snpit.lineage import Lineage
 
+TEST_CASE_DIR = Path("tests/test_cases")
 
 def get_record(record_type):
-    test_vcf = Path("test_cases/test.vcf")
+    test_vcf = TEST_CASE_DIR / "test.vcf"
     vcf = pysam.VariantFile(test_vcf)
     records = [record for record in vcf]
 
@@ -102,7 +103,7 @@ def test_getSampleGenotypedVariant_hetCallReturnsNone():
 
 
 def test_loadLineagesFromCsv_emptyFileReturnsEmptyDict():
-    filepath = Path("test_cases/empty.csv")
+    filepath = TEST_CASE_DIR / "empty.csv"
 
     actual = load_lineages_from_csv(filepath)
     expected = (dict(), dict())
@@ -111,7 +112,7 @@ def test_loadLineagesFromCsv_emptyFileReturnsEmptyDict():
 
 
 def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
-    filepath = Path("test_cases/test_library.csv")
+    filepath = TEST_CASE_DIR / "test_library.csv"
     beijing_lineage = Lineage(
         name="beijing", species="M. tuberculosis", lineage="Lineage 2", sublineage=""
     )
@@ -134,7 +135,7 @@ def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
 
 def test_classifyVcf_exampleVcfReturnsCorrectClassification():
     snpit = SnpIt(10, True)
-    vcf_path = Path("../example/example.vcf")
+    vcf_path = TEST_CASE_DIR / "example.vcf"
 
     actual = snpit.classify_vcf(vcf_path)
     expected = {
@@ -151,7 +152,7 @@ def test_countLineageClassificationsForSamplesInVcfWithNoSharedPositions_ReturnE
     snpit = create_test_snpit()
     snpit.ignore_filter = True
     snpit.ignore_status = True
-    vcf_path = Path("test_cases/empty_multisample.vcf")
+    vcf_path = TEST_CASE_DIR / "empty_multisample.vcf"
 
     actual = snpit.count_lineage_classifications_for_samples_in_vcf(vcf_path)
     expected = defaultdict()
@@ -165,7 +166,7 @@ def test_countLineageClassificationsForSamplesInVcf_ignoreFilterIgnoreStatus():
     snpit = create_test_snpit()
     snpit.ignore_filter = True
     snpit.ignore_status = True
-    vcf_path = Path("test_cases/multisample_test.vcf")
+    vcf_path = TEST_CASE_DIR / "multisample_test.vcf"
 
     actual = snpit.count_lineage_classifications_for_samples_in_vcf(vcf_path)
     expected = defaultdict()
@@ -179,7 +180,7 @@ def test_countLineageClassificationsForSamplesInVcf_notIgnoreFilterIgnoreStatus(
     snpit = create_test_snpit()
     snpit.ignore_filter = False
     snpit.ignore_status = True
-    vcf_path = Path("test_cases/multisample_test.vcf")
+    vcf_path = TEST_CASE_DIR / "multisample_test.vcf"
 
     actual = snpit.count_lineage_classifications_for_samples_in_vcf(vcf_path)
     expected = defaultdict()
@@ -193,7 +194,7 @@ def test_countLineageClassificationsForSamplesInVcf_ignoreFilterNotIgnoreStatus(
     snpit = create_test_snpit()
     snpit.ignore_filter = True
     snpit.ignore_status = False
-    vcf_path = Path("test_cases/multisample_test.vcf")
+    vcf_path = TEST_CASE_DIR / "multisample_test.vcf"
 
     actual = snpit.count_lineage_classifications_for_samples_in_vcf(vcf_path)
     expected = defaultdict()
@@ -207,7 +208,7 @@ def test_countLineageClassificationsForSamplesInVcf_notIgnoreFilterNotIgnoreStat
     snpit = create_test_snpit()
     snpit.ignore_filter = False
     snpit.ignore_status = False
-    vcf_path = Path("test_cases/multisample_test.vcf")
+    vcf_path = TEST_CASE_DIR / "multisample_test.vcf"
 
     actual = snpit.count_lineage_classifications_for_samples_in_vcf(vcf_path)
     expected = defaultdict()
@@ -351,7 +352,7 @@ def test_outputResults_twoSamplesResultsWritesTwoSamples():
 
 
 def test_classifyFasta_emptyFastaRaisesOSError():
-    empty_fasta = Path("test_cases/empty.fa")
+    empty_fasta = TEST_CASE_DIR / "empty.fa"
     snpit = create_test_snpit()
 
     with pytest.raises(OSError):
@@ -359,7 +360,7 @@ def test_classifyFasta_emptyFastaRaisesOSError():
 
 
 def test_classifyFasta_singleSampleFastaReturnSingleSample():
-    fasta_path = Path("test_cases/single_sample.fa")
+    fasta_path = TEST_CASE_DIR / "single_sample.fa"
     snpit = create_test_snpit()
     snpit.lineages["L1"].snps = {x: "A" for x in range(10)}
     snpit.lineages["L3"].snps = {x: "A" for x in range(20)}
@@ -372,7 +373,7 @@ def test_classifyFasta_singleSampleFastaReturnSingleSample():
 
 
 def test_classifyFasta_multiSampleFastaReturnMultiSample():
-    fasta_path = Path("test_cases/multi_sample.fa")
+    fasta_path = TEST_CASE_DIR / "multi_sample.fa"
     snpit = create_test_snpit()
     snpit.lineages["L1"].snps = {x: "A" for x in range(10)}
     snpit.lineages["L2"].snps = {x: "A" for x in range(20)}

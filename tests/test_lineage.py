@@ -2,6 +2,8 @@ from snpit.lineage import Lineage
 import csv
 from pathlib import Path
 
+TEST_CASE_DIR = Path("tests/test_cases")
+
 
 def test_equalityOperator_twoEqualReturnsTrue():
     lineage1 = Lineage(name="test", lineage="Lineage 5")
@@ -74,7 +76,7 @@ def test_greaterThanOperator_xEqualsYReturnsFalse():
 
 
 def test_addSnps_emptyFileSnpsRemainEmpty():
-    lineage_variant_file = Path("test_cases/empty.tsv")
+    lineage_variant_file = TEST_CASE_DIR / "empty.tsv"
     lineage = Lineage()
     lineage.add_snps(lineage_variant_file)
 
@@ -85,7 +87,7 @@ def test_addSnps_emptyFileSnpsRemainEmpty():
 
 
 def test_addSnps_realFileSnpsContainAllEntries():
-    lineage_variant_file = Path("test_cases/test_lineage.tsv")
+    lineage_variant_file = TEST_CASE_DIR / "test_lineage.tsv"
     lineage = Lineage()
     lineage.add_snps(lineage_variant_file)
 
@@ -111,7 +113,7 @@ def test_fromCsvEntry_emptyEntryReturnsEmptyLineage():
 
 
 def test_fromCsvEntry_realEntryEntryReturnsLineage():
-    library = csv.DictReader(Path("test_cases/test_library.csv").open())
+    library = csv.DictReader(TEST_CASE_DIR.joinpath("test_library.csv").open())
     entry = next(library)
 
     actual = Lineage.from_csv_entry(entry)

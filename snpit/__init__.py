@@ -1,3 +1,3 @@
 #! /usr/bin/env python
 
-from .core import SnpIt
+from .snpit import SnpIt
