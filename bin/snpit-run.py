@@ -1,16 +1,15 @@
-#!/usr/bin/env python
-
 """Whole genome SNP based identification of members of the Mycobacterium tuberculosis
 complex.
 SNP-IT allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H37Rv).
 """
 
-from pathlib import Path
-import sys
-from snpit import snpit
 import argparse
+import sys
+from pathlib import Path
 
-THRESHOLD = 10.0
+from snpit.core import SnpIt, output_results
+
+DEFAULT_THRESHOLD = 10.0
 
 
 def cli():
@@ -34,13 +33,18 @@ def cli():
         type=float,
         help="""The percentage of snps above which a sample is considered to belong to 
         a lineage. [{}]""".format(
-            THRESHOLD
+            DEFAULT_THRESHOLD
         ),
-        default=THRESHOLD,
+        default=DEFAULT_THRESHOLD,
     )
     parser.add_argument(
-        "--ignore_filter",
-        help="Whether to ignore the FILTER column.",
+        "--filter", help="Whether to adhere to the FILTER column.", action="store_true"
+    )
+    parser.add_argument(
+        "--status",
+        help="""Whether to adhere to the STATUS column. This is a custom 
+        field that gives more fine-grained control over whether a sample passes a 
+        user-defined filtering criterion, even if the record has PASS in FILTER.""",
         action="store_true",
     )
     args = parser.parse_args()
@@ -67,25 +71,23 @@ if __name__ == "__main__":
     options = cli()
 
     # create an instance (this loads all the lineages)
-    tb = snpit(
+    snpit = SnpIt(
         threshold=options.threshold,
-        input_file=options.input,
-        ignore_filter=options.ignore_filter,
+        ignore_filter=not options.filter,
+        ignore_status=not options.status,
     )
 
-    if tb.percentage is not None:
-        lineage = tb.lineage or "N/A"
-        sublineage = tb.sublineage or "N/A"
-        percentage = round(tb.percentage, 2)
-        output = "{species}\t{lineage}\t{sublineage}\t{percentage}\t{input_file}".format(
-            species=tb.species,
-            lineage=lineage,
-            sublineage=sublineage,
-            percentage=percentage,
-            input_file=options.input,
-        )
+    compressed = True if options.input.endswith("gz") else False
+    suffixes = Path(options.input).suffixes
+
+    if ".vcf" in suffixes:
+        results = snpit.classify_vcf(Path(options.input))
+    elif any(ext in suffixes for ext in [".fa", ".fasta"]):
+        results = snpit.classify_fasta_sequence(options.input, compression=compressed)
     else:
-        output = "{0}\t{0}\t{0}\t{0}\t{1}".format("N/A", options.input)
-    print("Species\tLineage\tSublineage\tPercentage\tInput", file=options.output)
-    print(output, file=options.output)
+        raise Exception(
+            "Only VCF and FASTA files are allowed as inputs (may be compressed with gzip,bzip2)"
+        )
+
+    output_results(options.output, results)
     options.output.close()
