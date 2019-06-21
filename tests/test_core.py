@@ -39,7 +39,7 @@ def create_test_snpit():
         "L1": Lineage(name="L1", species="S1", lineage="Lin1", sublineage="SL1"),
         "L2": Lineage(name="L2", species="S2", lineage="Lin2", sublineage="SL2"),
         "L3": Lineage(name="L3", species="S3", lineage="Lin3", sublineage="SL3"),
-        "L4": Lineage(name="L4", species="S4", lineage="Lin4", sublineage="SL4"),
+        "L4": Lineage(name="L4", species="S4", lineage="Lineage 4", sublineage="SL4"),
     }
     position_map = dict()
 
@@ -142,6 +142,20 @@ def test_classifyVcf_exampleVcfReturnsCorrectClassification():
     assert actual == expected
 
 
+def test_countLineageClassificationsForSamplesInVcfWithNoSharedPositions_ReturnEmpty():
+    snpit = create_test_snpit()
+    snpit.ignore_filter = True
+    snpit.ignore_status = True
+    vcf_path = Path("test_cases/empty_multisample.vcf")
+
+    actual = snpit.count_lineage_classifications_for_samples_in_vcf(vcf_path)
+    expected = defaultdict()
+    expected["Sample1"] = Counter([])
+    expected["Sample2"] = Counter([])
+
+    assert actual == expected
+
+
 def test_countLineageClassificationsForSamplesInVcf_ignoreFilterIgnoreStatus():
     snpit = create_test_snpit()
     snpit.ignore_filter = True
@@ -196,3 +210,112 @@ def test_countLineageClassificationsForSamplesInVcf_notIgnoreFilterNotIgnoreStat
     expected["Sample2"] = Counter(["L2", "L3"])
 
     assert actual == expected
+
+
+def test_determineLineage_emptyCountsInReturnsEmptyResults():
+    snpit = create_test_snpit()
+    snpit.lineages = {}
+
+    actual_percentage, actual_lineage = snpit.determine_lineage(Counter())
+    expected_percentage, expected_lineage = (0, Lineage())
+
+    assert actual_percentage == expected_percentage
+    assert actual_lineage == actual_lineage
+
+
+def test_determineLineage_L3MostCountsReturnsL3():
+    snpit = create_test_snpit()
+    dummy_snps = {x: "A" for x in range(10)}
+    snpit.lineages["L3"].snps = dummy_snps
+    snpit.lineages["L1"].snps = dummy_snps
+
+    actual_percentage, actual_lineage = snpit.determine_lineage(
+        Counter(["L3", "L1", "L3"])
+    )
+    expected_percentage, expected_lineage = (
+        20.0,
+        Lineage(name="L3", species="S3", lineage="Lin3", sublineage="SL3"),
+    )
+
+    assert actual_percentage == expected_percentage
+    assert actual_lineage == actual_lineage
+
+
+def test_determineLineage_L4MostCountsReturnsL4():
+    snpit = create_test_snpit()
+    dummy_snps = {x: "A" for x in range(10)}
+    snpit.lineages["L4"].snps = dummy_snps
+    snpit.lineages["L1"].snps = dummy_snps
+
+    actual_percentage, actual_lineage = snpit.determine_lineage(
+        Counter(["L4", "L1", "L4"])
+    )
+    expected_percentage, expected_lineage = (
+        20.0,
+        Lineage(name="L4", species="S3", lineage="Lin3", sublineage="SL3"),
+    )
+
+    assert actual_percentage == expected_percentage
+    assert actual_lineage == actual_lineage
+
+
+def test_determineLineage_L4NoSublineageMostCountsReturnsL4():
+    snpit = create_test_snpit()
+    dummy_snps = {x: "A" for x in range(10)}
+    snpit.lineages["L4"].snps = dummy_snps
+    snpit.lineages["L1"].snps = dummy_snps
+
+    actual_percentage, actual_lineage = snpit.determine_lineage(
+        Counter(["L4", "L1", "L4"])
+    )
+    expected_percentage, expected_lineage = (
+        20.0,
+        Lineage(name="L4", species="S3", lineage="Lineage 4"),
+    )
+
+    assert actual_percentage == expected_percentage
+    assert actual_lineage == actual_lineage
+
+
+def test_determineLineage_L4NoSublineageMostCountsReturnsL4():
+    snpit = create_test_snpit()
+    dummy_snps = {x: "A" for x in range(10)}
+    snpit.lineages["L4"].snps = dummy_snps
+    snpit.lineages["L1"].snps = dummy_snps
+    snpit.lineages["L4"].sublineage = ""
+
+    actual_percentage, actual_lineage = snpit.determine_lineage(
+        Counter(["L4", "L1", "L4"])
+    )
+    expected_percentage, expected_lineage = (
+        20.0,
+        Lineage(name="L4", species="S3", lineage="Lineage 4"),
+    )
+
+    assert actual_percentage == expected_percentage
+    assert actual_lineage == actual_lineage
+
+
+def test_determineLineage_L4NoSublineageMostCountsNextBestL4WithSublineageReturnsNextBest():
+    snpit = create_test_snpit()
+    dummy_snps = {x: "A" for x in range(10)}
+    snpit.lineages["L4"].snps = dummy_snps
+    snpit.lineages["L1"].snps = dummy_snps
+    snpit.lineages["L4"].sublineage = ""
+    snpit.lineages["L1"].lineage = "Lineage 4"
+    snpit.lineages["L1"].sublineage = "corner case"
+
+    actual_percentage, actual_lineage = snpit.determine_lineage(
+        Counter(["L4", "L1", "L4"])
+    )
+    expected_percentage, expected_lineage = (
+        20.0,
+        Lineage(name="L1", species="S1", lineage="Lineage 4", sublineage="corner case"),
+    )
+
+    assert actual_percentage == expected_percentage
+    assert actual_lineage == actual_lineage
+
+#todo tests for output
+
+#todo tests for fasta

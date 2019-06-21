@@ -1,11 +1,10 @@
-#! /usr/bin/env python
 import csv
 import gzip
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Tuple, List, Iterator
-import numpy as np
+from typing import Tuple, List
+
 import pysam
 from Bio import SeqIO
 
@@ -43,28 +42,9 @@ class SnpIt(object):
         # self.lineages = load_lineages_from_csv(library_csv)
         self.lineages, self.lineage_positions = load_lineages_from_csv(library_csv)
 
-    def add_snps_to_all_lineages(self):
-        """Add all of the variants that make up a lineage to the Lineage objects."""
-        for lineage_name in self.lineages:
-            lineage_variants_file = LIBRARY_DIR / lineage_name
-
-            if not lineage_variants_file.exists():
-                print(
-                    "Lineage file {} does not exist for lineage {}".format(
-                        lineage_variants_file, lineage_name
-                    ),
-                    file=sys.stderr,
-                )
-                continue
-
-            self.lineages[lineage_name].add_snps(lineage_variants_file)
-
     def classify_vcf(self, vcf_path: Path) -> dict:
         """Loads the vcf file and then, for each lineage, identify the base at each of
         the identifying positions in the genome.
-
-        Args:
-            vcf_file: Path to the VCF file to be read
         """
         sample_lineage_counts = self.count_lineage_classifications_for_samples_in_vcf(
             vcf_path
@@ -191,7 +171,6 @@ class SnpIt(object):
                         int(pos) - 1
                     ]
 
-    # todo: clean up this function
     def determine_lineage(self, lineage_counts: Counter) -> Tuple[float, Lineage]:
         """
         Having read the VCF file, for each lineage, calculate the percentage of SNP
@@ -201,47 +180,63 @@ class SnpIt(object):
         Returns:
             tuple of (lineage,percentage)
         """
+        lineage_shared_percentage = self.shared_variants_percentage_for_each_lineage_from_counts(
+            lineage_counts
+        )
+        lineage_shared_percentage.sort(reverse=True)
+
+        if not lineage_shared_percentage:
+            identified_lineage = Lineage()
+            identified_lineage_percentage = 0
+        else:
+            identified_lineage = lineage_shared_percentage[0][1]
+            identified_lineage_percentage = lineage_shared_percentage[0][0]
+
+        if identified_lineage_percentage > self.threshold:
+
+            if (
+                identified_lineage.lineage == "Lineage 4"
+                and not identified_lineage.sublineage
+                and len(lineage_shared_percentage) > 1
+            ):
+                if self.is_next_best_lineage4(*lineage_shared_percentage[1]):
+                    identified_lineage = lineage_shared_percentage[1][1]
+
+        return identified_lineage_percentage, identified_lineage
+
+    def shared_variants_percentage_for_each_lineage_from_counts(
+        self, counts: Counter
+    ) -> List[Tuple[float, Lineage]]:
+        """Calculates the percentage of shared variants across all lineages.
+
+        Args:
+            counts: A Counter containing the number of times a lineage had a shared
+            variant with a sample.
+        Returns:
+            A sorted list of tuples where in the first element in a tuple is the number
+            of shared SNPs divided by the total number of SNPs that define a lineage
+            and the second element is the lineage for the percentage.
+        """
         percentage_shared_snps_for_lineages = []
 
-        for name, lineage in self.lineages.items():
-            shared_calls = lineage_counts[name]
+        for lineage_name, shared_calls in counts.items():
+            lineage = self.lineages[lineage_name]
             ref_calls = len(lineage.snps)
 
-            # thereby calculate the percentage of SNPs in this sample that match the lineage
             percentage_shared_snps_for_lineages.append(
                 ((shared_calls / ref_calls) * 100, lineage)
             )
 
-        percentage_shared_snps_for_lineages.sort(reverse=True)
+        return percentage_shared_snps_for_lineages
 
-        identified_lineage = percentage_shared_snps_for_lineages[0][1]
-        identified_lineage_percentage = percentage_shared_snps_for_lineages[0][0]
-
-        # if the top lineage is above the specified threshold, return the classification
-        if identified_lineage_percentage > self.threshold:
-
-            # look at the next-highest lineage if the top one is Lineage 4 but with no sublineage
-            if (
-                identified_lineage.lineage == "Lineage 4"
-                and identified_lineage.sublineage == ""
-            ):
-
-                next_best_lineage = percentage_shared_snps_for_lineages[1][1]
-                next_best_lineage_percentage = percentage_shared_snps_for_lineages[1][0]
-
-                # if the next best lineage is ALSO lineage 4, but this one has a
-                # sublineage and is above the threshold, report that one instead
-                if (
-                    next_best_lineage.lineage == "Lineage 4"
-                    and next_best_lineage.sublineage != ""
-                    and next_best_lineage_percentage > self.threshold
-                ):
-
-                    identified_lineage = next_best_lineage
-
-            return identified_lineage_percentage, identified_lineage
-        else:
-            return 0, Lineage()
+    def is_next_best_lineage4(
+        self, next_best_lineage_percentage: float, next_best_lineage: Lineage
+    ) -> bool:
+        return (
+            next_best_lineage.lineage == "Lineage 4"
+            and next_best_lineage.sublineage != ""
+            and next_best_lineage_percentage > self.threshold
+        )
 
 
 def load_lineages_from_csv(filepath: Path) -> Tuple[dict, dict]:
