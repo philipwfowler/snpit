@@ -12,6 +12,7 @@ DEFAULT_THRESHOLD = 10.0
 def cli():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "-i",
         "--input",
         required=True,
         help="""Path to the VCF or FASTA file to read and classify 
@@ -22,8 +23,7 @@ def cli():
         "-o",
         "--output",
         type=str,
-        help="""Path to output results to.
-                            Default is STDOUT (-).""",
+        help="""Path to output results to. Default is STDOUT (-).""",
         default="-",
     )
     parser.add_argument(
