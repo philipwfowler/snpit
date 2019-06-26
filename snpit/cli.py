@@ -5,6 +5,7 @@ SNP-IT allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H
 import argparse
 import sys
 from pathlib import Path
+from .version import __version__
 
 DEFAULT_THRESHOLD = 10.0
 
@@ -44,6 +45,13 @@ def cli():
         field that gives more fine-grained control over whether a sample passes a 
         user-defined filtering criterion, even if the record has PASS in FILTER.""",
         action="store_true",
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        help="""Show the program's version number and exit.""",
+        action="version",
+        version=__version__,
     )
     args = parser.parse_args()
 

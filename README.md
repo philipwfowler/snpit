@@ -1,16 +1,18 @@
 # snpit
 
-Whole genome SNP based identification of members of the Mycobacterium tuberculosis complex. Based on code originally written by Samuel Lipworth and turned into a package by Philip Fowler.
+Whole genome SNP based identification of members of the *Mycobacterium tuberculosis* complex. Based on code originally written by Samuel Lipworth and turned into a package by Philip Fowler and Michael Hall.
 
-SNP-IT allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H37rV).
+`snpit` allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H37rV) and FAST(A/Q) files.
 
 For more information please see this preprint;
 
-Lipworth S, Jajou R, de Neeling H, P B, van der Hoek W, et al. A novel multi SNP based method for the identification of subspecies and associated lineages and sub-lineages of the Mycobacterium tuberculosis complex by whole genome sequencing. bioRxiv preprint, 2017. Epub ahead of print 2017. DOI: [10.1101/213850](https://doi.org/10.1101/213850).
+> Lipworth S, Jajou R, de Neeling H, P B, van der Hoek W, et al. A novel multi SNP based method for the identification of subspecies and associated lineages and sub-lineages of the Mycobacterium tuberculosis complex by whole genome sequencing. bioRxiv preprint, 2017. Epub ahead of print 2017. DOI: [10.1101/213850](https://doi.org/10.1101/213850).
 
-Please email samuel.lipworth@medsci.ox.ac.uk with any queries.
+Please email <samuel.lipworth@medsci.ox.ac.uk> with any queries.
 
 ## How to install
+
+`snpit` requires python version 3.6 or greater.
 
 First clone the repository on your local machine
 
@@ -26,7 +28,7 @@ Resolving deltas: 100% (58/58), done.
 then enter the directory and install
 ```
 > cd snpit
-> python setup.py install --user
+> python3 setup.py install --user
 ```
 The `--user` flag ensures that it is only installed for the user (avoiding the need to know the root/sudo password). To system-wide install simply omit the flag.
 
