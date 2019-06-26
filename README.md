@@ -4,9 +4,9 @@ Whole genome SNP based identification of members of the *Mycobacterium tuberculo
 
 `snpit` allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H37rV) and FAST(A/Q) files.
 
-For more information please see this preprint;
+For more information please see the article;
 
-> Lipworth S, Jajou R, de Neeling H, P B, van der Hoek W, et al. A novel multi SNP based method for the identification of subspecies and associated lineages and sub-lineages of the Mycobacterium tuberculosis complex by whole genome sequencing. bioRxiv preprint, 2017. Epub ahead of print 2017. DOI: [10.1101/213850](https://doi.org/10.1101/213850).
+> Lipworth S, Jajou R, de Neeling A, et al. SNP-IT Tool for Identifying Subspecies and Associated Lineages of Mycobacterium tuberculosis Complex. Emerging Infectious Diseases. 2019;25(3):482-488. doi:[10.3201/eid2503.180894](http://dx.doi.org/10.3201/eid2503.180894).
 
 Please email <samuel.lipworth@medsci.ox.ac.uk> with any queries.
 
