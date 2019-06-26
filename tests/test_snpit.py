@@ -11,6 +11,7 @@ from snpit.lineage import Lineage
 
 TEST_CASE_DIR = Path("tests/test_cases")
 
+
 def get_record(record_type):
     test_vcf = TEST_CASE_DIR / "test.vcf"
     vcf = pysam.VariantFile(test_vcf)
@@ -125,7 +126,7 @@ def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
 
     actual_lineages, actual_position_map = load_lineages_from_csv(filepath)
 
-    assert len(actual_position_map) == 729
+    assert len(actual_position_map) == 721
     assert actual_position_map[115_499] == {"G": [indo_lineage.name]}
     assert actual_position_map[1_288_698] == {"A": [beijing_lineage.name]}
 
@@ -140,7 +141,7 @@ def test_classifyVcf_exampleVcfReturnsCorrectClassification():
     actual = snpit.classify_vcf(vcf_path)
     expected = {
         "example": (
-            97.368_421_052_631_58,
+            97.2972972972973,
             Lineage(lineage="Lineage 2", species="M. tuberculosis", name="beijing"),
         )
     }
