@@ -1,3 +1,23 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [snpit](#snpit)
+  - [Installation](#installation)
+    - [PyPi](#pypi)
+    - [Conda](#conda)
+    - [Locally](#locally)
+  - [Usage](#usage)
+      - [VCF input and print result to screen](#vcf-input-and-print-result-to-screen)
+      - [FASTA input and write result to file](#fasta-input-and-write-result-to-file)
+      - [VCF input and only use records that have PASS in the FILTER field](#vcf-input-and-only-use-records-that-have-pass-in-the-filter-field)
+      - [Filtering VCF based on STATUS field](#filtering-vcf-based-on-status-field)
+      - [Increase threshold for calling a lineage](#increase-threshold-for-calling-a-lineage)
+    - [Full usage](#full-usage)
+  - [Output format](#output-format)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # snpit
 
 Whole genome SNP based identification of members of the *Mycobacterium tuberculosis* complex. Based on code originally written by Samuel Lipworth and turned into a package by Philip Fowler and Michael Hall.
