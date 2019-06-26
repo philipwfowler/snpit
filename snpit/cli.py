@@ -16,8 +16,8 @@ def cli():
         "-i",
         "--input",
         required=True,
-        help="""Path to the VCF or FASTA file to read and classify 
-            (can be bzip2ed/gzipped)""",
+        help="""Path to the VCF or FAST(A/Q) file to read and classify. File can be 
+        multi-sample and/or compressed.""",
         type=Path,
     )
     parser.add_argument(
