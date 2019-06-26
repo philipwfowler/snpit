@@ -84,19 +84,19 @@ pytest
 #### VCF input and print result to screen
 
 ```bash
-snpit --input <in.vcf>
+snpit --input in.vcf
 ```
 *Note: You do not need to specify anything special if your file is multi-sample.*
 #### FASTA input and write result to file
 
 ```bash
-snpit --input <in.fa> --output <out.tsv>
+snpit --input in.fa --output out.tsv
 ```
 
 #### VCF input and only use records that have PASS in the FILTER field
 
 ```bash
-snpit -i <in.vcf> --filter -o <out.tsv>
+snpit -i in.vcf --filter -o out.tsv
 ```
 
 #### Filtering VCF based on STATUS field
@@ -106,13 +106,13 @@ fine-grained FILTER column in that some samples may pass for a position, and oth
 not.
 
 ```bash
-snpit -i <in.vcf> --status -o <out.tsv>
+snpit -i in.vcf --status -o out.tsv
 ```
 
 #### Increase threshold for calling a lineage
 
 ```bash
-snpit -i <in.vcf> --threshold 95
+snpit -i in.vcf --threshold 95
 ```
 The threshold is the percentage of the positions known to identify this lineage that are 
 found in your sample.
