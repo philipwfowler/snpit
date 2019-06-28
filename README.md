@@ -20,6 +20,8 @@
 
 # snpit
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)  
+
 Whole genome SNP based identification of members of the *Mycobacterium tuberculosis* complex. Based on code originally written by Samuel Lipworth and turned into a package by Philip Fowler and Michael Hall.
 
 `snpit` allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H37rV) and FAST(A/Q) files.
