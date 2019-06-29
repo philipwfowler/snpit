@@ -118,7 +118,7 @@ def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
         name="beijing", species="M. tuberculosis", lineage="Lineage 2", sublineage=""
     )
     indo_lineage = Lineage(
-        name="indo-oceanic",
+        name="Indo_Oceanic",
         species="M. tuberculosis",
         lineage="Lineage 1",
         sublineage="Sublineage 7",
@@ -126,12 +126,12 @@ def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
 
     actual_lineages, actual_position_map = load_lineages_from_csv(filepath)
 
-    assert len(actual_position_map) == 721
-    assert actual_position_map[115_499] == {"G": [indo_lineage.name]}
+    assert len(actual_position_map) == 714
+    assert actual_position_map[1083755] == {"G": [indo_lineage.name]}
     assert actual_position_map[1_288_698] == {"A": [beijing_lineage.name]}
 
     assert actual_lineages["beijing"] == beijing_lineage
-    assert actual_lineages["indo-oceanic"] == indo_lineage
+    assert actual_lineages["Indo_Oceanic"] == indo_lineage
 
 
 def test_classifyVcf_exampleVcfReturnsCorrectClassification():

@@ -121,7 +121,7 @@ def test_fromCsvEntry_realEntryEntryReturnsLineage():
         species="M. tuberculosis",
         lineage="Lineage 1",
         sublineage="Sublineage 7",
-        name="indo-oceanic",
+        name="Indo_Oceanic",
     )
 
     assert actual == expected
