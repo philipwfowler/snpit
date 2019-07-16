@@ -92,13 +92,7 @@ def test_addSnps_realFileSnpsContainAllEntries():
     lineage.add_snps(lineage_variant_file)
 
     actual = lineage.snps
-    expected = {
-        1_011_511: "C",
-        1_022_003: "C",
-        1_028_217: "A",
-        1_034_758: "T",
-        1_071_966: "G",
-    }
+    expected = {1011511: "C", 1022003: "C", 1028217: "A", 1034758: "T", 1071966: "G"}
 
     assert actual == expected
 

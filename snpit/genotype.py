@@ -42,8 +42,10 @@ class Genotype:
         delimiter = "/"
         if s.count(delimiter) != 1:
             raise InvalidGenotypeString(
-                f"""Invalid genotype string received: {s}\nGenotype string should be 
-                of the form 0/0"""
+                """Invalid genotype string received: {s}\nGenotype string should be 
+                of the form 0/0""".format(
+                    s=s
+                )
             )
 
         calls = s.strip().replace(".", "-1").split("/")

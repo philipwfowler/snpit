@@ -128,9 +128,10 @@ class SnpIt(object):
             variant = "-"
         else:
             raise UnexpectedGenotypeError(
-                f"""Got a genotype for which a Ref/Alt/Null call could not be 
-                    determined: {genotype.call()}.\nPlease raise this with the 
-                    developers."""
+                """Got a genotype for which a Ref/Alt/Null call could not be 
+                    determined: {}.\nPlease raise this with the developers.""".format(
+                    genotype.call()
+                )
             )
         return variant
 
@@ -283,8 +284,13 @@ def format_output_string(sample_name: str, percentage: float, lineage: Lineage) 
     sublineage = lineage.sublineage or "N/A"
     name = lineage.name or "N/A"
 
-    return (
-        f"{sample_name}\t{species}\t{lineage_name}\t{sublineage}\t{name}\t{percentage}"
+    return "{sample_name}\t{species}\t{lineage_name}\t{sublineage}\t{name}\t{percentage}".format(
+        sample_name=sample_name,
+        species=species,
+        lineage_name=lineage_name,
+        sublineage=sublineage,
+        name=name,
+        percentage=percentage,
     )
 
 

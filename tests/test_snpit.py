@@ -128,7 +128,7 @@ def test_loadLineagesFromCsv_fileWithTwoEntriesReturnsDictWithTwoLineages():
 
     assert len(actual_position_map) == 714
     assert actual_position_map[1083755] == {"G": [indo_lineage.name]}
-    assert actual_position_map[1_288_698] == {"A": [beijing_lineage.name]}
+    assert actual_position_map[1288698] == {"A": [beijing_lineage.name]}
 
     assert actual_lineages["beijing"] == beijing_lineage
     assert actual_lineages["Indo_Oceanic"] == indo_lineage
@@ -336,7 +336,7 @@ def test_outputResults_emptySampleResultsWritesSampleWithNAs():
 def test_outputResults_twoSamplesResultsWritesTwoSamples():
     outfile = StringIO()
     results = {
-        "Sample1": (25.253_333_3, Lineage(name="L1", sublineage="SL1")),
+        "Sample1": (25.2533333, Lineage(name="L1", sublineage="SL1")),
         "Sample2": (75.75899, Lineage(name="L2", species="S2", lineage="Lin2")),
     }
     output_results(outfile, results)

@@ -34,7 +34,7 @@ Please email <samuel.lipworth@medsci.ox.ac.uk> with any queries.
 
 ## Installation
 
-`snpit` requires python version 3.6 or greater.
+`snpit` requires python version 3.5 or greater.
 
 ### PyPi
 
