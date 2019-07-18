@@ -14,7 +14,7 @@ TEST_CASE_DIR = Path("tests/test_cases")
 
 def get_record(record_type):
     test_vcf = TEST_CASE_DIR / "test.vcf"
-    vcf = pysam.VariantFile(test_vcf)
+    vcf = pysam.VariantFile(str(test_vcf))
     records = [record for record in vcf]
 
     if record_type == "ref":

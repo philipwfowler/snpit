@@ -17,7 +17,7 @@ def main(args=None):
     if ".vcf" in suffixes:
         results = snpit.classify_vcf(args.input)
     elif any(ext in suffixes for ext in [".fa", ".fasta"]):
-        results = snpit.classify_fasta_sequence(args.input)
+        results = snpit.classify_fasta(args.input)
     else:
         raise Exception(
             "Only VCF or FASTA files are allowed as input (may be compressed)"

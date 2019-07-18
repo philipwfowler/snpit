@@ -60,7 +60,7 @@ class SnpIt(object):
         """For each sample in the given VCF, count the number of records that match
         each lineage.
         """
-        vcf = pysam.VariantFile(vcf_path)
+        vcf = pysam.VariantFile(str(vcf_path))
 
         sample_lineage_counts = defaultdict(Counter)
 
@@ -137,7 +137,7 @@ class SnpIt(object):
         return variant
 
     def classify_fasta(self, fasta_path: Path) -> Dict[str, Tuple[float, Lineage]]:
-        fasta = pysam.FastaFile(fasta_path)
+        fasta = pysam.FastaFile(str(fasta_path))
         sample_lineage_counts = dict()
 
         for sample_name in fasta.references:
@@ -249,7 +249,7 @@ def load_lineages_from_csv(filepath: Path) -> Tuple[dict, dict]:
         if not lineage_variants_file.exists():
             print(
                 "Lineage file {} does not exist for lineage {}".format(
-                    lineage_variants_file, lineage.name
+                    str(lineage_variants_file), lineage.name
                 ),
                 file=sys.stderr,
             )
