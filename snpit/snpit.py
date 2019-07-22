@@ -9,8 +9,7 @@ import pysam
 from .genotype import Genotype, UnexpectedGenotypeError
 from .lineage import Lineage
 
-
-LIBRARY_DIR = Path("lib/")
+LIBRARY_DIR = Path(__file__).parent.parent / "lib/"
 
 
 class SnpIt(object):
