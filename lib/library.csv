@@ -1,10 +1,10 @@
 id,species,lineage,sublineage
-indo-oceanic,M. tuberculosis,Lineage 1,
+Indo_Oceanic,M. tuberculosis,Lineage 1,
 beijing,M. tuberculosis,Lineage 2,
-EAI,M. tuberculosis,Lineage 3,
+East_African_Indian,M. tuberculosis,Lineage 3,
 lineage4,M. tuberculosis,Lineage 4,
 haarlem,M. tuberculosis,Lineage 4,Haarlem
-lam,M. tuberculosis,Lineage 4,LAM
+LAM,M. tuberculosis,Lineage 4,LAM
 cameroon,M. tuberculosis,Lineage 4,Cameroon
 ghana,M. tuberculosis,Lineage 4,Ghana
 stype,M. tuberculosis,Lineage 4,S-type
@@ -22,6 +22,6 @@ microti,M. microti,,
 canetti,M. canetti,,
 pinipedii,M. pinipedii,,
 caprae,M. bovis caprae,,
-dassie,Dassie bacillus (ex Procavia capensis),,
+Dassie,Dassie bacillus (ex Procavia capensis),,
 suricattae,M. suricattae,,
 mungi,M. mungi,,

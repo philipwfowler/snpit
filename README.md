@@ -1,54 +1,173 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [snpit](#snpit)
+  - [Installation](#installation)
+    - [PyPi](#pypi)
+    - [Conda](#conda)
+    - [Locally](#locally)
+  - [Usage](#usage)
+      - [VCF input and print result to screen](#vcf-input-and-print-result-to-screen)
+      - [FASTA input and write result to file](#fasta-input-and-write-result-to-file)
+      - [VCF input and only use records that have PASS in the FILTER field](#vcf-input-and-only-use-records-that-have-pass-in-the-filter-field)
+      - [Filtering VCF based on STATUS field](#filtering-vcf-based-on-status-field)
+      - [Increase threshold for calling a lineage](#increase-threshold-for-calling-a-lineage)
+    - [Full usage](#full-usage)
+  - [Output format](#output-format)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # snpit
 
-Whole genome SNP based identification of members of the Mycobacterium tuberculosis complex. Based on code originally written by Samuel Lipworth and turned into a package by Philip Fowler.
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)  
 
-SNP-IT allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H37rV).
+Whole genome SNP based identification of members of the *Mycobacterium tuberculosis* complex. Based on code originally written by Samuel Lipworth and turned into a package by Philip Fowler and Michael Hall.
 
-For more information please see this preprint;
+`snpit` allows rapid Mycobacterial speciation of VCF files aligned to NC000962 (H37rV) and FAST(A/Q) files.
 
-Lipworth S, Jajou R, de Neeling H, P B, van der Hoek W, et al. A novel multi SNP based method for the identification of subspecies and associated lineages and sub-lineages of the Mycobacterium tuberculosis complex by whole genome sequencing. bioRxiv preprint, 2017. Epub ahead of print 2017. DOI: [10.1101/213850](https://doi.org/10.1101/213850).
+For more information please see the article;
 
-Please email samuel.lipworth@medsci.ox.ac.uk with any queries.
+> Lipworth S, Jajou R, de Neeling A, et al. SNP-IT Tool for Identifying Subspecies and Associated Lineages of Mycobacterium tuberculosis Complex. Emerging Infectious Diseases. 2019;25(3):482-488. doi:[10.3201/eid2503.180894](http://dx.doi.org/10.3201/eid2503.180894).
 
-## How to install
+Please email <samuel.lipworth@medsci.ox.ac.uk> with any queries.
 
-First clone the repository on your local machine
+## Installation
 
-```   
-> git clone https://github.com/philipwfowler/snpit.git
-Cloning into 'snpit'...
-remote: Counting objects: 140, done.
-remote: Compressing objects: 100% (10/10), done.
-remote: Total 140 (delta 7), reused 13 (delta 6), pack-reused 122
-Receiving objects: 100% (140/140), 2.95 MiB | 3.58 MiB/s, done.
-Resolving deltas: 100% (58/58), done.
-```   
-then enter the directory and install
+`snpit` requires python version 3.5 or greater.
+
+### PyPi
+
+```bash
+# not yet setup
 ```
-> cd snpit
-> python setup.py install --user
+
+### Conda
+
+```bash
+# not yet setup
 ```
-The `--user` flag ensures that it is only installed for the user (avoiding the need to know the root/sudo password). To system-wide install simply omit the flag.
 
-## Dependencies
+### Locally
 
-The code requires the BioPython and PyVCF Python packages. The above installation process will detect if they already installed in the local machine, and if not, download and install them.
+There are two ways of doing this: installing to your local python packages, or in a virtual environment (recommended).
+
+First clone the repository on your local machine and move into the directory.
+
+```bash
+git clone https://github.com/philipwfowler/snpit.git
+cd snpit
+```
+
+**Virtual environment**
+
+The instructions for installing in a virtual environment are based around using [`pipenv`](https://pipenv.readthedocs.io/en/latest/), 
+which is the [python recommended](https://packaging.python.org/tutorials/managing-dependencies/#managing-dependencies) way of managing dependencies.  
+
+```bash
+# this installs snpit and dependencies inside a new virtual environment
+pipenv install -e . pysam pytest
+# activate the virtual environment
+pipenv shell
+# make sure it is working
+pytest
+```
+
+**Without virtual environment**
+
+```bash
+python3 setup.py install --user
+# make sure it is working
+pytest
+```
 
 ## Usage
 
-The code is Python3 and a `snpit` class is defined. To demonstrate simple usage, a python script that calls the package (`snpit-run.py`) which can be found in `bin/` folder is installed in your `$PATH` during installation. To see what it does, a single example VCF is provided in the `example/` folder
+#### VCF input and print result to screen
+
+```bash
+snpit --input in.vcf
+```
+*Note: You do not need to specify anything special if your file is multi-sample.*
+#### FASTA input and write result to file
+
+```bash
+snpit --input in.fa --output out.tsv
+```
+
+#### VCF input and only use records that have PASS in the FILTER field
+
+```bash
+snpit -i in.vcf --filter -o out.tsv
+```
+
+#### Filtering VCF based on STATUS field
+
+This is a custom field that has been used in some CRyPTIC pipelines. It is used as a more 
+fine-grained FILTER column in that some samples may pass for a position, and others may 
+not.
+
+```bash
+snpit -i in.vcf --status -o out.tsv
+```
+
+#### Increase threshold for calling a lineage
+
+```bash
+snpit -i in.vcf --threshold 95
+```
+The threshold is the percentage of the positions known to identify this lineage that are 
+found in your sample.
+
+### Full usage
+
+To get the full usage/help menu for `snpit` just run 
+
+```bash
+snpit --help
+```
 
 ```
-> cd example
-> ls
-example.vcf
+usage: snpit [-h] -i INPUT [-o OUTPUT] [--threshold THRESHOLD] [--filter]
+             [--status] [-v]
+
+Whole genome SNP based identification of members of the Mycobacterium
+tuberculosis complex. SNP-IT allows rapid Mycobacterial speciation of VCF
+files aligned to NC000962 (H37Rv).
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        Path to the VCF or FAST(A/Q) file to read and
+                        classify. File can be multi-sample and/or compressed.
+  -o OUTPUT, --output OUTPUT
+                        Path to output results to. Default is STDOUT (-).
+  --threshold THRESHOLD
+                        The percentage of snps above which a sample is
+                        considered to belong to a lineage. [10.0]
+  --filter              Whether to adhere to the FILTER column.
+  --status              Whether to adhere to the STATUS column. This is a
+                        custom field that gives more fine-grained control over
+                        whether a sample passes a user-defined filtering
+                        criterion, even if the record has PASS in FILTER.
+  -v, --version         Show the program's version number and exit.
 ```
 
-To run simply
-```
-> snpit-run.py --input example.vcf 
-example.vcf
-     M. tuberculosis        Lineage 2                  97.7 %
-```
-Note that, as shown in the paper, sublineages are only available for Lineage 4, hence no sublineage is reported for this sample. To alter how the results are output, please see the `bin/snpit-run.py` script.
+## Output format
 
+The output file is a tab-delimited file (containing a header).
+
+```tsv
+Sample  Species Lineage Sublineage      Name    Percentage
+sample1 M. tuberculosis Lineage 2       N/A     beijing 91.78
+sample2 M. tuberculosis Lineage 2       N/A     beijing 97.37
+sample3 M. tuberculosis Lineage 4       Haarlem haarlem 100.0
+```
+
+From left to right, the columns are:
+* **Sample** - the name of the sample. This is taken from the sample column heading in the VCF or the FAST(A/Q) header.
+* **Species** - Species of the call.
+* **Lineage** - Lineage of the call (if Mtb.).
+* **Sublineage** - Sublineage of the call (if applicable).
+* **Name** - name of file in the `lib/` directory where the marker variants for this call were taken from. This also relates to the common name for the lineage in some cases.
+* **Percentage** - Percentage of the call's variants found in the sample.
