@@ -1,0 +1,16 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+coverage = ">=4.5.3"
+black = ">=19.3b0"
+pytest = ">=5.0"
+
+[packages]
+pysam = ">=0.15.2"
+snpit = {editable = true,path = "."}
+
+[pipenv]
+allow_prereleases = true
