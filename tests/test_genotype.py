@@ -26,6 +26,7 @@ def test_equalityOperator_returnFalseForRefVsAltCalls():
 def test_equalityOperator_returnFalseForRefVsHetCalls():
     assert Genotype(0) != Genotype(1, 0)
 
+
 def test_callReturnsTupleWithNone():
     g = Genotype(0)
 
@@ -126,6 +127,7 @@ def test_isReference_returnsFalseForAltAltCall():
     g = Genotype(1, 1)
 
     assert not g.is_reference()
+
 
 def test_isAlt_returnsFalseForRefNoneCall():
     g = Genotype(0)

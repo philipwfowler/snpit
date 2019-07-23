@@ -15,6 +15,8 @@
       - [Increase threshold for calling a lineage](#increase-threshold-for-calling-a-lineage)
     - [Full usage](#full-usage)
   - [Output format](#output-format)
+  - [Contributing](#contributing)
+    - [Code style](#code-style)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -65,15 +67,20 @@ The instructions for installing in a virtual environment are based around using 
 which is the [python recommended](https://packaging.python.org/tutorials/managing-dependencies/#managing-dependencies) way of managing dependencies.  
 
 ```bash
-# this installs snpit and dependencies inside a new virtual environment
-pipenv install -e . pysam pytest
-# activate the virtual environment
-pipenv shell
+# check pipenv is installed and on PATH
+make init
+# install snpit and dependencies
+make install
 # make sure it is working
-pytest
+make test
+# activate the environment and start using
+pipenv shell
+
 ```
 
 **Without virtual environment**
+
+*Note: We strongly encourage using a virtual environment if you are installing locally.*
 
 ```bash
 python3 setup.py install --user
@@ -171,3 +178,27 @@ From left to right, the columns are:
 * **Sublineage** - Sublineage of the call (if applicable).
 * **Name** - name of file in the `lib/` directory where the marker variants for this call were taken from. This also relates to the common name for the lineage in some cases.
 * **Percentage** - Percentage of the call's variants found in the sample.
+
+## Contributing
+
+We welcome any contributions. Firstly, fork this repository and clone it locally.
+
+Next, setup `pipenv` for the project
+
+```bash
+make init
+make install
+make test
+```
+
+If you wish to put in a pull request to the main repository, please write a thorough 
+description of the changes you have made.
+
+### Code style
+
+This project uses the [black](https://github.com/psf/black) code formatter. Please ensure 
+any code you wish to merge has been formatted accordingly using 
+
+```bash
+make lint
+```
