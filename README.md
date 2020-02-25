@@ -61,21 +61,20 @@ git clone https://github.com/philipwfowler/snpit.git
 cd snpit
 ```
 
-**Virtual environment**
-
-The instructions for installing in a virtual environment are based around using [`pipenv`](https://pipenv.readthedocs.io/en/latest/), 
-which is the [python recommended](https://packaging.python.org/tutorials/managing-dependencies/#managing-dependencies) way of managing dependencies.  
+**Virtual environment [recommended]**
 
 ```bash
-# check pipenv is installed and on PATH
-make init
 # install snpit and dependencies
 make install
 # make sure it is working
 make test
-# activate the environment and start using
-pipenv shell
-
+# get the command to activate the environment
+make activate
+# activate the environment with the output from the above command
+# start using snpit
+snpit --help
+# when you are done, exit the environment
+deactivate
 ```
 
 **Without virtual environment**
@@ -85,7 +84,7 @@ pipenv shell
 ```bash
 python3 setup.py install --user
 # make sure it is working
-pytest
+python3 setup.py test
 ```
 
 ## Usage
