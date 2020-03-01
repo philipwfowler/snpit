@@ -25,12 +25,27 @@ for line in sys.stdin:
 endef
 export PRINT_HELP_PYSCRIPT
 
-BROWSER := python -c "$$BROWSER_PYSCRIPT"
+BROWSER := python3 -c "$$BROWSER_PYSCRIPT"
+PY?=python3
+VENVDIR?=$(WORKDIR)/.venv
+
+ifdef WORKDIR  # Must be an absolute path
+WORKDIR:=$(abspath $(WORKDIR))
+else
+WORKDIR=$(CURDIR)
+endif
+
+VENV=$(VENVDIR)/bin
+bold := $(shell tput bold)
+sgr0 := $(shell tput sgr0)
 
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
+activate: ## prints the command to run to activate the enironment
+	@printf "Run the following: $(bold)source $(VENV)/activate$(sgr0)\n"
+
+clean: clean-build clean-pyc clean-test clean-venv ## remove all build, test, coverage, venv and Python artifacts
 
 clean-build: ## remove build artifacts
 	rm -fr build/
@@ -49,34 +64,45 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 	rm -f .coverage
 
-PIPENV := $(shell command -v pipenv 2> /dev/null)
+.PHONY: clean-venv
+clean-venv: ## remove virtual environment artifacts
+	[ ! -d $(VENVDIR) ] || rm -rf $(VENVDIR)
 
-init:
-ifndef PIPENV
-	$(error "dot is not available please install graphviz")
-endif
-	@echo "Pipenv found in PATH. You may now run \033[1mmake install"
+init: ## initialise the virtual environment
+	mkdir -p $(VENVDIR)
+	$(PY) -m venv $(VENVDIR)
+	$(VENV)/$(PY) -m pip install --upgrade pip
 
-lint: ## reformat with black
-	pipenv run black snpit tests
+.PHONY: dev-install
+dev-install: ## install dev dependencies
+	$(VENV)/$(PY) -m pip install black pytest coverage
 
-test: ## run tests
-	pipenv run pytest
+lint: dev-install ## reformat with black
+	$(VENV)/$(PY) -m black snpit tests
 
-coverage: ## check code coverage quickly with the default Python
-	pipenv run coverage run --source snpit -m pytest
-	pipenv run coverage report -m
-	pipenv run coverage html
-	pipenv run $(BROWSER) htmlcov/index.html
+test: dev-install ## run tests
+	$(VENV)/$(PY) -m pytest
+
+coverage: dev-install ## check code coverage and open in browser
+	$(VENV)/$(PY) -m pip install coverage pytest
+	$(VENV)/$(PY) -m coverage run --source snpit -m pytest
+	$(VENV)/$(PY) -m coverage report -m
+	$(VENV)/$(PY) -m coverage html
+	@$(BROWSER) htmlcov/index.html
 
 release: clean lint ## package and upload a release
-	pipenv run python setup.py sdist upload
-	pipenv run python setup.py bdist_wheel upload
+	$(VENV)/$(PY) setup.py sdist upload
+	$(VENV)/$(PY) setup.py bdist_wheel upload
 
 dist: clean lint ## builds source and wheel package
-	pipenv run python setup.py sdist
-	pipenv run twine upload -r pypi dist/`ls -t dist | head -1`
+	$(VENV)/$(PY) setup.py sdist
+	$(VENV)/$(PY) -m twine upload -r pypi dist/`ls -t dist | head -1`
 
+install: clean init ## install the package into the virtual environment
+	$(VENV)/$(PY) -m pip install $(WORKDIR)
 
-install: clean ## install the package within your pipenv
-	pipenv install --pre --dev
+.PHONY: show-venv
+show-venv: ## show the virtual environment details
+	@$(VENV)/$(PY) -c "import sys; print('Python ' + sys.version.replace('\n',''))"
+	@$(VENV)/pip --version
+	@echo venv: $(VENVDIR)
