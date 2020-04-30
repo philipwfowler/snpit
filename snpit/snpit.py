@@ -49,6 +49,7 @@ class SnpIt(object):
         )
 
         results = {}
+
         for sample_name, lineage_counts in sample_lineage_counts.items():
             results[sample_name] = self.determine_lineage(lineage_counts)
         return results
@@ -128,7 +129,7 @@ class SnpIt(object):
             variant = "-"
         else:
             raise UnexpectedGenotypeError(
-                """Got a genotype for which a Ref/Alt/Null call could not be 
+                """Got a genotype for which a Ref/Alt/Null call could not be
                     determined: {}.\nPlease raise this with the developers.""".format(
                     genotype.call()
                 )
